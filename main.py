@@ -96,6 +96,11 @@ class FarkleGame():
         self.task = asyncio.create_task(self.cancelIdleUser())
 
     async def giveUp(self, interaction: discord.Interaction):
+        btn = Button(emoji='🏳', label='Give up', style=discord.ButtonStyle.red)
+        btn.callback = self.giveUpConfirmed
+        await interaction.response.send_message(embed=embeds.getGiveUpConfirmEmbed(), view=View(btn), ephemeral=True)
+
+    async def giveUpConfirmed(self, interaction: discord.Interaction):
         self.task.cancel()
         await interaction.response.defer()
         await self.latestMsg.edit(embed=self.latestEmbed, view=None)
@@ -131,7 +136,14 @@ class FarkleGame():
 
     async def cancelIdleUser(self):
         try:
-            await asyncio.sleep(60)
+            await asyncio.sleep(45)
+        except asyncio.CancelledError:
+            return
+        await self.channel.send(embed=embeds.getHurryUpEmbed(self.players[self.turn]))
+        temp = await self.channel.send(f'{self.players[self.turn].mention}')
+        await temp.delete()
+        try:
+            await asyncio.sleep(15)
         except asyncio.CancelledError:
             return
         await self.latestMsg.edit(embed=self.latestEmbed, view=None)
@@ -297,6 +309,7 @@ class MeldButton(Button):
         self.game.latestEmbed = embeds.getAfterMeldEmbed(p1Bank=self.game.bank[0], p2Bank=self.game.bank[1], turnBank=self.game.bank[2],
                                                     iconList=[dice[i] for i in self.game.tableDice],
                                                     iconList2=[dice[i] for i in self.game.invDice], meld=self.meld, mlt=self.game.multiplier, lead=self.game.turn==self.game.lead)
+        self.game.embedList += [self.game.latestEmbed]
         self.game.latestMsg = await self.game.channel.send(embed=self.game.latestEmbed, view=btns)
         self.game.task = asyncio.create_task(self.game.cancelIdleUser())
 
@@ -311,13 +324,14 @@ class MeldButton(Button):
 
 @bot.event
 async def on_ready():
-    global farkleCentral, regularRole,adminRole, gamesCategory, replaysCategory
+    global farkleCentral, regularRole,adminRole, gamesCategory, replaysCategory, totalGames
     print(f'Logged on as {bot.user}!')
     farkleCentral = bot.guilds[0]
     regularRole = discord.Guild.get_role(farkleCentral, 1073320359245398077)
     adminRole = discord.Guild.get_role(farkleCentral, 1073320074875785216)
     gamesCategory = discord.utils.get(farkleCentral.categories, id=1073357967061164042)
     replaysCategory = discord.utils.get(farkleCentral.categories, id=1075132258127708240)
+    totalGames = int(open('save.txt', 'r').read())
 
 
 @bot.event
@@ -397,6 +411,9 @@ async def createUserGame(p1: discord.User, p2: discord.User, ctx, embed: discord
     temp = FarkleGame(type=0, id=totalGames, state=0, players=(p1, p2), channel=channel, latestMsg=msg)
     currentGames += [temp]
     totalGames += 1
+    temp2 = open('save.txt', 'w')
+    temp2.write(str(totalGames))
+    temp2.close()
     temp2 = await channel.send(f'{p1.mention}{p2.mention}')
     await temp2.delete()
     temp.task = asyncio.create_task(cancelUnreadyGame(temp, msg, channel, p1, p2))
@@ -410,4 +427,4 @@ async def cancelUnreadyGame(temp, msg, channel, p1, p2):
     await channel.send(embed=embeds.getReadyTimeoutEmbed(p1, p2))
     await temp.terminateGame(15)
 
-bot.run('TOKEN')
+bot.run('MTA3MzMxMjg3OTkwNzk3OTM3NA.Gf-j0Y.VuodBjJ925sgUlqPTWeX-FGzIRHGqVfddbSS2k')

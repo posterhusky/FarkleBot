@@ -289,3 +289,17 @@ def getReplayEmbed():
     embed1.set_thumbnail(
         url='https://cdn.discordapp.com/attachments/1073319058709155852/1073701531351781428/armstrong_farkle_pic.png')
     return embed1
+
+def getGiveUpConfirmEmbed():
+    embed1 = discord.Embed(title=f'**Are you sure?**', colour=discord.Colour.red(),
+                           description=f'You are about to give up and quit the game, please confirm that this action is intentional.')
+    embed1.set_thumbnail(
+        url='https://cdn.discordapp.com/attachments/1073319058709155852/1073388851084677121/ej_farkle_pic.png')
+    return embed1
+
+def getHurryUpEmbed(user):
+    embed1 = discord.Embed(title=f'**Hurry up!**', colour=discord.Colour.red(),
+                           description=f'It\'s {user.mention}\'s turn!\n\nIn 15 seconds the game will terminate. If you need more time to think, press the "Reset idle timer" button.')
+    embed1.set_thumbnail(
+        url='https://cdn.discordapp.com/attachments/1073319058709155852/1073388851084677121/ej_farkle_pic.png')
+    return embed1
