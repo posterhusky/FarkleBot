@@ -9,7 +9,7 @@ gamesCategory = None
 replaysCategory = None
 
 totalGames=0
-currentGames = [] # id, state, players[p1, p2], channel, turn, bank[round, p1, p2], msgcount, tableDice, invDice, latestMsg
+currentGames = []
 
 dice = '<:die1:1073714606813483071> <:die2:1073714605051887739> <:die3:1073714602350743692> <:die4:1073714600924692552> <:die5:1073714599691550880> <:die6:1073714597359521822>'.split()
 

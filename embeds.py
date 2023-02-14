@@ -300,6 +300,5 @@ def getGiveUpConfirmEmbed():
 def getHurryUpEmbed(user):
     embed1 = discord.Embed(title=f'**Hurry up!**', colour=discord.Colour.red(),
                            description=f'It\'s {user.mention}\'s turn!\n\nIn 15 seconds the game will terminate. If you need more time to think, press the "Reset idle timer" button.')
-    embed1.set_thumbnail(
-        url='https://cdn.discordapp.com/attachments/1073319058709155852/1073388851084677121/ej_farkle_pic.png')
+    embed1.set_thumbnail(url='https://cdn.discordapp.com/attachments/1073319058709155852/1073388851084677121/ej_farkle_pic.png')
     return embed1
