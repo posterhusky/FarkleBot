@@ -34,6 +34,8 @@ class FarkleGame():
         self.multiplier = 1.0
         self.turnsQty = 0
         self.lead = None
+        self.hurryUpMsg = None
+        self.turnHistory = []
 
     async def saveReplay(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -41,9 +43,8 @@ class FarkleGame():
         channel = await farkleCentral.create_text_channel(name=f'replay-{str(self.id).rjust(6, "0")}', category=replaysCategory)
         await channel.set_permissions(farkleCentral.default_role, read_messages=False, send_messages=False)
         await channel.set_permissions(regularRole, read_messages=False, send_messages=False)
-        for i in range(len(self.embedList)//10):
-            await channel.send(embeds=self.embedList[i*10:(i+1)*10])
-        await channel.send(embeds=self.embedList[len(self.embedList)//10*10:])
+        for i in self.embedList:
+            await channel.send(embed=i)
         await channel.set_permissions(self.players[0], read_messages=True, send_messages=False)
         await channel.set_permissions(self.players[1], read_messages=True, send_messages=False)
 
@@ -62,11 +63,16 @@ class FarkleGame():
         while self in currentGames:
             currentGames.remove(self)
 
+    def getTurnRecap(self) -> discord.Embed:
+        return embeds.getTurnRecap(destUsr=self.players[self.turn], p1Bank=self.bank[0], p2Bank=self.bank[1],
+                            turnBank=self.bank[2], qty=self.turnsQty, pNum=self.turn, history=self.turnHistory)
+
     async def startTurn(self):
         if abs(self.bank[0] - self.bank[1]) >= 1500:
             self.lead = 0 if self.bank[0] > self.bank[1] else 1
         else:
             self.lead = -1
+        self.turnHistory = []
         self.bank[2] = 0
         self.tableDice = [0] * 6
         self.invDice = []
@@ -88,9 +94,9 @@ class FarkleGame():
         btns.add_item(btn2)
         btns.add_item(btn3)
         btns.add_item(btn4)
-        self.latestEmbed = embeds.getStartTurnEmbed(destUsr=self.players[self.turn], p1Bank=self.bank[0], p2Bank=self.bank[1], turn=self.turn, mlt=self.multiplier, lead=self.turn==self.lead, qty=self.turnsQty)
-        self.embedList += [self.latestEmbed]
-        self.latestMsg = await self.channel.send(embed=self.latestEmbed, view=btns)
+        self.embedList += [None]
+        self.latestEmbed = embeds.getStartTurnEmbed(mlt=self.multiplier, lead=self.turn==self.lead, pNum=self.turn)
+        self.latestMsg = await self.channel.send(embeds=[self.getTurnRecap(), self.latestEmbed], view=btns)
         temp = await self.channel.send(f'{self.players[self.turn].mention}')
         await temp.delete()
         self.task = asyncio.create_task(self.cancelIdleUser())
@@ -103,8 +109,12 @@ class FarkleGame():
     async def giveUpConfirmed(self, interaction: discord.Interaction):
         self.task.cancel()
         await interaction.response.defer()
-        await self.latestMsg.edit(embed=self.latestEmbed, view=None)
-        self.embedList += [embeds.getGiveUpEmbed(user=interaction.user, playerName=self.turn)]
+        for n, i in enumerate(self.embedList):
+            if i == None:
+                self.embedList[n] = self.getTurnRecap()
+                break
+        await self.latestMsg.edit(embeds=[self.getTurnRecap(), self.latestEmbed], view=None)
+        self.embedList += [embeds.getGiveUpEmbed(user=interaction.user, pNum=self.turn)]
         await self.channel.send(embed=self.embedList[-1])
         await self.terminateGame(15)
 
@@ -115,13 +125,18 @@ class FarkleGame():
         self.task.cancel()
         await interaction.response.defer()
         self.bank[self.turn] += self.bank[2]
-        await self.latestMsg.edit(embed=self.latestEmbed, view=None)
-        self.embedList += [embeds.getScoreBankedEmbed(p1Bank=self.bank[0], p2Bank=self.bank[1], turnBank=self.bank[2])]
-        await self.channel.send(embed=self.embedList[-1])
+        self.latestEmbed = embeds.getScoreBankedEmbed(turnBank=self.bank[2], pNum=interaction.user==self.players[1])
+        self.turnHistory += [('Score banked:', str(self.bank[2]) + ' pts.')]
+        await self.latestMsg.edit(embeds=[self.getTurnRecap(), self.latestEmbed], view=None)
+        for n, i in enumerate(self.embedList):
+            if i == None:
+                self.embedList[n] = self.getTurnRecap()
+                break
         await asyncio.sleep(2)
+        await self.latestMsg.edit(embed=self.getTurnRecap(), view=None)
         if self.bank[self.turn] >= 10000:
             self.embedList += [
-                embeds.getWinEmbed(winner=self.players[self.turn], playerNum=self.turn, turns=self.turnsQty)]
+                embeds.getWinEmbed(winner=self.players[self.turn], pNum=self.turn, turns=self.turnsQty)]
             await self.channel.send(embed=self.embedList[-1])
             await self.terminateGame(30)
             return
@@ -132,21 +147,28 @@ class FarkleGame():
     async def extendIdleTimeout(self, interaction: discord.Interaction):
         self.task.cancel()
         self.task = asyncio.create_task(self.cancelIdleUser())
-        await interaction.response.send_message(embed=embeds.getIdleTimoutExtendedEmbed(), ephemeral=True)
+        await interaction.response.send_message(embed=embeds.getIdleTimeoutExtendedEmbed(), ephemeral=True)
 
     async def cancelIdleUser(self):
+        if self.hurryUpMsg != None:
+            await self.hurryUpMsg.delete()
+        self.hurryUpMsg = None
         try:
             await asyncio.sleep(45)
         except asyncio.CancelledError:
             return
-        await self.channel.send(embed=embeds.getHurryUpEmbed(self.players[self.turn]))
+        self.hurryUpMsg = await self.channel.send(embed=embeds.getHurryUpEmbed(self.players[self.turn]))
         temp = await self.channel.send(f'{self.players[self.turn].mention}')
         await temp.delete()
         try:
             await asyncio.sleep(15)
         except asyncio.CancelledError:
             return
-        await self.latestMsg.edit(embed=self.latestEmbed, view=None)
+        for n, i in enumerate(self.embedList):
+            if i == None:
+                self.embedList[n] = self.getTurnRecap()
+                break
+        await self.latestMsg.edit(embeds=[self.getTurnRecap(), self.latestEmbed], view=None)
         self.embedList += [embeds.getInteractionTimeoutEmbed(user=self.players[self.turn])]
         await self.channel.send(embed=self.embedList[-1])
         await self.terminateGame(15)
@@ -156,7 +178,6 @@ class FarkleGame():
             await interaction.response.send_message(embed=embeds.getNotYourTurnEmbed(), ephemeral=True)
             return
         self.task.cancel()
-        await self.latestMsg.edit(embed=self.latestEmbed, view=None)
         await interaction.response.defer()
         self.tableDice = [random.randint(0, 5) for _ in '.' * len(self.tableDice)]
         result = self.getMelds()
@@ -175,17 +196,23 @@ class FarkleGame():
             btns.add_item(btn3)
             btns.add_item(btn4)
             self.bank[2] += result[1]
-            self.latestEmbed = embeds.getHotDiceEmbed(p1Bank=self.bank[0], p2Bank=self.bank[1], turnBank=self.bank[2], iconList=[dice[i] for i in self.tableDice], pts=result[1], mlt=self.multiplier, lead=self.turn==self.lead)
-            self.embedList += [self.latestEmbed]
-            self.latestMsg = await self.channel.send(embed=self.latestEmbed, view=btns)
+            self.latestEmbed = embeds.getHotDiceEmbed(iconList=[dice[i] for i in self.tableDice], pts=result[1], mlt=self.multiplier, lead=self.turn==self.lead, pNum=self.turn)
+            self.turnHistory += [('Rolled dice:', ' '.join([dice[i] for i in self.tableDice]) + ' (Hot dice)')]
+            await self.latestMsg.edit(embeds=[self.getTurnRecap(), self.latestEmbed], view=btns)
             self.tableDice = [0] * 6
             self.invDice = []
             self.task = asyncio.create_task(self.cancelIdleUser())
             return
         if self.melds == []:
-            self.embedList += [embeds.getFarkledEmbed(p1Bank=self.bank[0], p2Bank=self.bank[1], turnBank=self.bank[2], iconList=[dice[i] for i in self.tableDice])]
-            await self.channel.send(embed=self.embedList[-1])
+            self.latestEmbed = embeds.getFarkledEmbed(turnBank=self.bank[2], pNum=self.turn, iconList=[dice[i] for i in self.tableDice])
+            self.turnHistory += [('Rolled dice:', ' '.join([dice[i] for i in self.tableDice]) + ' (Farkled)')]
+            await self.latestMsg.edit(embeds=[self.getTurnRecap(), self.latestEmbed], view=None)
+            for n, i in enumerate(self.embedList):
+                if i == None:
+                    self.embedList[n] = self.getTurnRecap()
+                    break
             await asyncio.sleep(2)
+            await self.latestMsg.edit(embed=self.getTurnRecap(), view=None)
             self.turn += 1
             self.turn %= 2
             await self.startTurn()
@@ -205,9 +232,9 @@ class FarkleGame():
         btns.add_item(btn2)
         btns.add_item(btn3)
         btns.add_item(btn4)
-        self.latestEmbed = embeds.getAfterRollEmbed(p1Bank=self.bank[0], p2Bank=self.bank[1], turnBank=self.bank[2], iconList=[dice[i] for i in self.tableDice], iconList2=[dice[i] for i in self.invDice], mlt=self.multiplier, lead=self.turn==self.lead)
-        self.embedList += [self.latestEmbed]
-        self.latestMsg = await self.channel.send(embed=self.latestEmbed, view=btns)
+        self.latestEmbed = embeds.getAfterRollEmbed(iconList=[dice[i] for i in self.tableDice], iconList2=[dice[i] for i in self.invDice], mlt=self.multiplier, lead=self.turn==self.lead, pNum=self.turn)
+        self.turnHistory += [('Rolled dice:', ' '.join([dice[i] for i in self.tableDice]))]
+        await self.latestMsg.edit(embeds=[self.getTurnRecap(), self.latestEmbed], view=btns)
         self.task = asyncio.create_task(self.cancelIdleUser())
 
     def getMelds(self):
@@ -215,9 +242,9 @@ class FarkleGame():
         amount = len(self.tableDice)
         sorted_nums = self.tableDice.copy()
         sorted_nums.sort()
-        phdTable = sorted_nums.copy()
-        phdScore = 0
-        self.melds = [] # dice id, amount, pts, emoji
+        perfectTable = sorted_nums.copy() # tests the possibility of hot dice by removing meldable dice
+        perfectScore = 0 # score in case of hot dice
+        self.melds = [] # die id, amount, pts, emoji
         for i in range(6):
             if self.tableDice.count(i) == 6:
                 return (True, int(3000*multiplier))
@@ -226,46 +253,46 @@ class FarkleGame():
         for i in range(6):
             if self.tableDice.count(i) >= 5:
                 self.melds += [(i, 5, int(2000*multiplier), dice[i])]
-                if i in phdTable:
-                    while i in phdTable:
-                        phdTable.remove(i)
-                    phdScore += int(2000*multiplier)
+                if i in perfectTable:
+                    while i in perfectTable:
+                        perfectTable.remove(i)
+                    perfectScore += int(2000*multiplier)
         if amount == 6 and sorted_nums[0] == sorted_nums[1] and sorted_nums[2] == sorted_nums[3] and sorted_nums[4] == sorted_nums[5]:
             return (True, int(1500*multiplier))
         if self.tableDice.count(0) >= 3:
             self.melds += [(0, 3, int(1000*multiplier), dice[0])]
-            if 0 in phdTable:
-                while 0 in phdTable:
-                    phdTable.remove(0)
-                phdScore += int(1100*multiplier) if self.tableDice.count(0) == 4 else int(1000*multiplier)
+            if 0 in perfectTable:
+                while 0 in perfectTable:
+                    perfectTable.remove(0)
+                perfectScore += int(1100*multiplier) if self.tableDice.count(0) == 4 else int(1000*multiplier)
         for i in range(6):
             if self.tableDice.count(i) >= 4:
                 self.melds += [(i, 4, int(1000*multiplier), dice[i])]
-                if i in phdTable:
-                    while i in phdTable:
-                        phdTable.remove(i)
-                    phdScore += int(1000*multiplier)
+                if i in perfectTable:
+                    while i in perfectTable:
+                        perfectTable.remove(i)
+                    perfectScore += int(1000*multiplier)
         for i in range(1, 6):
             if self.tableDice.count(i) >= 3:
                 self.melds += [(i, 3, int((i+1)*100*multiplier), dice[i])]
-                if i in phdTable:
-                    while i in phdTable:
-                        phdTable.remove(i)
-                    phdScore += int((i+1)*100*multiplier)
+                if i in perfectTable:
+                    while i in perfectTable:
+                        perfectTable.remove(i)
+                    perfectScore += int((i+1)*100*multiplier)
         if 0 in self.tableDice:
             self.melds += [(0, 1, int(100*multiplier), dice[0])]
-            phdScore += phdTable.count(0) * int(100*multiplier)
-            while 0 in phdTable:
-                phdTable.remove(0)
+            perfectScore += perfectTable.count(0) * int(100*multiplier)
+            while 0 in perfectTable:
+                perfectTable.remove(0)
         if 4 in self.tableDice:
             self.melds += [(4, 1, int(50*multiplier), dice[4])]
-            phdScore += phdTable.count(4) * int(50*multiplier)
-            while 4 in phdTable:
-                phdTable.remove(4)
+            perfectScore += perfectTable.count(4) * int(50*multiplier)
+            while 4 in perfectTable:
+                perfectTable.remove(4)
 
-        if phdTable == []:
+        if perfectTable == []:
             self.melds = []
-            return (True, phdScore)
+            return (True, perfectScore)
         else:
             return (False, 0)
 
@@ -282,7 +309,6 @@ class MeldButton(Button):
             await interaction.response.send_message(embed=embeds.getNotYourTurnEmbed(), ephemeral=True)
             return
         self.game.task.cancel()
-        await self.game.latestMsg.edit(embed=self.game.latestEmbed, view=None)
         await interaction.response.defer()
         self.game.bank[2] += self.meld[2]
         self.game.melds.remove(self.meld)
@@ -306,11 +332,9 @@ class MeldButton(Button):
         btns.add_item(btn2)
         btns.add_item(btn3)
         btns.add_item(btn4)
-        self.game.latestEmbed = embeds.getAfterMeldEmbed(p1Bank=self.game.bank[0], p2Bank=self.game.bank[1], turnBank=self.game.bank[2],
-                                                    iconList=[dice[i] for i in self.game.tableDice],
-                                                    iconList2=[dice[i] for i in self.game.invDice], meld=self.meld, mlt=self.game.multiplier, lead=self.game.turn==self.game.lead)
-        self.game.embedList += [self.game.latestEmbed]
-        self.game.latestMsg = await self.game.channel.send(embed=self.game.latestEmbed, view=btns)
+        self.game.latestEmbed = embeds.getAfterMeldEmbed(iconList=[dice[i] for i in self.game.tableDice], iconList2=[dice[i] for i in self.game.invDice], meld=self.meld, mlt=self.game.multiplier, lead=self.game.turn==self.game.lead, pNum=self.game.turn)
+        self.game.turnHistory += [('Melded dice:', f'{self.meld[3]} × {self.meld[1]}')]
+        await self.game.latestMsg.edit(embeds=[self.game.getTurnRecap(), self.game.latestEmbed], view=btns)
         self.game.task = asyncio.create_task(self.game.cancelIdleUser())
 
 
@@ -427,4 +451,4 @@ async def cancelUnreadyGame(temp, msg, channel, p1, p2):
     await channel.send(embed=embeds.getReadyTimeoutEmbed(p1, p2))
     await temp.terminateGame(15)
 
-bot.run('MTA3MzMxMjg3OTkwNzk3OTM3NA.Gf-j0Y.VuodBjJ925sgUlqPTWeX-FGzIRHGqVfddbSS2k')
+bot.run(open('token.txt', 'r').read())
