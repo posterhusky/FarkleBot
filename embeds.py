@@ -99,6 +99,13 @@ def getChallengeCreationEmbed(destUsr):
         url=images.getImage(2))
     return embed1
 
+def getAiGameStartingEmbed(destUsr):
+    embed1 = discord.Embed(title=f'**Starting game...**', colour=discord.Colour.blue(),
+                           description=f'You have started a game against AI.\n\nThe game is now setting up, please wait...')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
 def getSelfChallengeErrEmbed(destUsr):
     embed1 = discord.Embed(title=f'**You can\'t invite yourself!**', colour=discord.Colour.red(),
                            description=f'Unfortunately, you can\'t play a game with yourself *(for now...)*.\n\nIf you want, you can play against me!\n*/invite user: {destUsr.mention} *')
@@ -165,6 +172,13 @@ def getInviteEmbed(p1, p2):
 def getBothReadyEmbed(destUsr, p1, p2):
     embed1 = discord.Embed(title=f'**Starting the game...**', colour=discord.Colour.green(),
                            description=f'Both players are ready! Starting the game...\n\nP1: {p1.mention}\nP2: {p2.mention}\n\n{destUsr.mention} starts!')
+    embed1.set_thumbnail(
+        url=images.getImage(1))
+    return embed1
+
+def getAiGameReadyEmbed(player):
+    embed1 = discord.Embed(title=f'**Game created!**', colour=discord.Colour.green(),
+                           description=f'The game against an AI was successfully created! Please note that you will still not be able to join the queue or invite someone during this game.\n\nP1: {player.mention}\nP2: Farkle bot\n\nYou start!')
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
