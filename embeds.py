@@ -99,9 +99,30 @@ def getChallengeCreationEmbed(destUsr):
         url=images.getImage(2))
     return embed1
 
-def getAiGameStartingEmbed(destUsr):
+def getAiGameStartingEmbed():
     embed1 = discord.Embed(title=f'**Starting game...**', colour=discord.Colour.blue(),
                            description=f'You have started a game against AI.\n\nThe game is now setting up, please wait...')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getQueueJoinEmbed():
+    embed1 = discord.Embed(title=f'**Joined the queue!**', colour=discord.Colour.blue(),
+                           description=f'You have joined the queue! A game will start as soon as there will be 2 players in the queue. To leave the queue, remove the reaction.\n\nTo confirm your presence, you will be kicked in **10 minutes** and will recieve a dm notifiying you about this.')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getQueueLeaveEmbed():
+    embed1 = discord.Embed(title=f'**Left the queue!**', colour=discord.Colour.blue(),
+                           description=f'You have left the queue! If you can\'t find players, try asking in the chat!')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getQueueKickEmbed():
+    embed1 = discord.Embed(title=f'**You have been kicked from the queue!**', colour=discord.Colour.blue(),
+                           description=f'You have have been kicked from the queue. If you\'re still interested in joining a farkle game, react under the queue message.')
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
@@ -165,6 +186,13 @@ def getIdleTimeoutExtendedEmbed():
 def getInviteEmbed(p1, p2):
     embed1 = discord.Embed(title=f'**Game invitation!**', colour=discord.Colour.green(),
                            description=f'{p1.mention} has invited {p2.mention} to a farkle game!\n\nReady-up as the game is about to begin!\n\nReact with ✅ to get into ready mode. The game will start as soon as both players are ready!\n\nThe invite is valid for **45 seconds**.')
+    embed1.set_thumbnail(
+        url=images.getImage(0))
+    return embed1
+
+def getQueueGameEmbed(p1, p2):
+    embed1 = discord.Embed(title=f'**Queue complete!**', colour=discord.Colour.green(),
+                           description=f'There was enough players waiting in the queue to start a game!\n\n{p1.mention} VS {p2.mention}\n\nReady-up as the game is about to begin!\n\nReact with ✅ to get into ready mode. The game will start as soon as both players are ready!\n\nThe invite is valid for **45 seconds**.')
     embed1.set_thumbnail(
         url=images.getImage(0))
     return embed1
