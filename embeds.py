@@ -1,7 +1,7 @@
 import discord, images
 
 
-def getRuleEmbeds():
+def getGameRuleEmbeds():
     embed1 = discord.Embed(title='**Farkle Rules**', colour=discord.Colour.yellow(),
                            description='FARKLE is a push-your-luck game in which the objective is to be the first player to accumulate 10 000 points.')
     embed1.set_thumbnail(
@@ -10,20 +10,23 @@ def getRuleEmbeds():
                            description='The game is played with 6 dice and is turn based. Both players start at 0 points and obtain them by form scoring melds.')
     embed2.set_thumbnail(
         url=images.getImage(1))
-    embed2.add_field(name='**💰🎲 Rolling, Scoring, Banking**',
+    embed2.add_field(name='**🎲💰 Rolling, Scoring, Banking**',
                      value='A player starts their turn by throwing all 6 dice. After a throw, the player must set aside at least 1 meld and get score for it. After that the player can either finish their turn by banking all the score or re-roll the remaining dice.',
                      inline=False)
     embed2.add_field(name='**💰❌ Farkling**',
                      value='If there are no melds on the table after a throw, the player has "farkled" and lost the score gained during this turn.',
                      inline=True)
-    embed2.add_field(name='**🔥🎲 Hot Dice**',
+    embed2.add_field(name='**🎲🔥 Hot Dice**',
                      value='If melds can be formed from all the remaining dice, the player can re-roll all 6 dice or finish their turn by banking their score.',
                      inline=True)
+    embed2.add_field(name='**💰🔥 High stakes**',
+                     value='If a player farkles the other player can continue his turn and get all the points (or 1000 pts. if the turn score was smaller than 1000). However if the other player farkles on his first roll the high stake is failed! Upon a failed high the player looses the same amount of points form his bank as the amount of points in the turn score. A failed high steak can\'t be continued.',
+                     inline=False)
+    embed2.add_field(name='**➕💰 Multipliers**',
+                     value='To seed up long games, every 5th turn the multiplier will be increased by 0,2x. It multiplies all score earned during a turn, however it is disabled if of players that have a 1,5K+ point lead. It is done to make comebacks easier, so watch out!',
+                     inline=False)
     embed2.add_field(name='**💰👑 Game End**',
                      value='The game ends when a player that finished his turn has a total of 10 000 points or more.',
-                     inline=False)
-    embed2.add_field(name='**💰✖ Multipliers**',
-                     value='To seed up long games, every 5th turn the multiplier will be increased by 0,2x. It multiplies all score earned during a turn, however it is disabled if of players that have a 1,5K+ point lead. It is done to make comebacks easier, so watch out!',
                      inline=False)
     embed3 = discord.Embed(title='**Melds**', colour=discord.Colour.yellow(),
                            description='Melds are specific combinations of dice that grant points when picked.')
@@ -60,6 +63,29 @@ def getRuleEmbeds():
                      inline=True)
     return embed1, embed2, embed3
 
+def getServerRuleEmbeds():
+    embed1 = discord.Embed(title='**Server rules**', colour=discord.Colour.yellow(),
+                           description='Official server rules 100% real and very original! They\'re not really enforced but please follow them 🙄...')
+    embed1.set_thumbnail(
+        url=images.getImage(1))
+    embed1.add_field(name='**☑ Speak mainly English**',
+                     value='This is mainly an english-speaking server, so please write in english. (https://translate.google.com/?sl=auto&tl=en)',
+                     inline=False)
+    embed1.add_field(name='**☑ Respect everyone**',
+                     value='Respect everyone. Don\'t insult or harass other users.',
+                     inline=False)
+    embed1.add_field(name='**☑ Keep it sfw**',
+                     value='Hide stuff that you think is nsfw under a spoiler, or better, just don\'t post it. This includes usernames and other profile info.',
+                     inline=False)
+    embed1.add_field(name='**☑ Don\'t ping**',
+                     value='Please don\'t ping people for no apparent reason. If you don\'t like recieving pings, you can turn off invites in <#1076954499421319198>.',
+                     inline=False)
+    embed1.add_field(name='**☑ Keep it in topic**',
+                     value='<#1077318483777437758> is a general chat without a specific topic, however the threads of this chat generally have a topic that you should consider respecting. You can reate your own thread with any topic if you want.',
+                     inline=False)
+    embed1.add_field(name='**A thing to note is that the project crew is able to mute anyone they want.\nYou can find the rules of the game in <#1073356373515042897>\nHave Fun!**', value='', inline=False)
+    return embed1
+
 def getNewGameEmbeds(self):
     embed1 = discord.Embed(title='**How to start a new game?**', colour=discord.Colour.green(),
                            description='There\'s 3 options to start a new game:')
@@ -91,6 +117,27 @@ def getNewGameEmbeds(self):
     embed3.set_thumbnail(
         url=images.getImage(2))
     return embed1, embed2, embed3
+
+def getBlockInvitesEmbed():
+    embed1 = discord.Embed(title=f'**Disable invites**', colour=discord.Colour.blue(),
+                           description=f'Prevents all players from inviting you.\n\nAdd a reaction to enable this option.')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getAnnouncementPingEmbed():
+    embed1 = discord.Embed(title=f'**Announcement ping**', colour=discord.Colour.blue(),
+                           description=f'Enable if you want to get pinged on an announcement.\n\nAdd a reaction to enable this option.')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getQueuePingEmbed():
+    embed1 = discord.Embed(title=f'**Queue ping**', colour=discord.Colour.blue(),
+                           description=f'Enable if you want to get pinged when someone joins the queue.\n\nAdd a reaction to enable this option.')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
 
 def getChallengeCreationEmbed(destUsr):
     embed1 = discord.Embed(title=f'**Starting game...**', colour=discord.Colour.blue(),
@@ -158,6 +205,13 @@ def getInteractionTimeoutEmbed(user):
 def getInvitedIngameEmbed(destUsr):
     embed1 = discord.Embed(title=f'**This user is already in-game!**', colour=discord.Colour.red(),
                            description=f'You can\'t invite {destUsr.mention} since this user is already in-game.')
+    embed1.set_thumbnail(
+        url=images.getImage(1))
+    return embed1
+
+def getHasDisabledInvitesEmbed(destUsr):
+    embed1 = discord.Embed(title=f'**This user disabled invites!**', colour=discord.Colour.red(),
+                           description=f'You can\'t invite {destUsr.mention} since they chose to block all the invites.')
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
@@ -235,9 +289,14 @@ def getTurnRecap(destUsr, p1Bank, p2Bank, turnBank, qty, pNum, history):
         url=images.getImage(not pNum))
     return embed1
 
-def getStartTurnEmbed(mlt, lead, pNum):
+def getStartTurnEmbed(mlt, lead, stake, pNum):
     embed1 = discord.Embed(title=f'**It\'s dice rolling time!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
                            description=f'Your turn just started! You can roll the dice or... roll the dice!')
+    if stake != None:
+        embed1.add_field(
+            name=f'You can do a high stake for *{stake[0]} pts.*',
+            value='',
+            inline=False)
     if lead:
         embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your 1,5K+ lead.', value='',
                          inline=False)
@@ -249,8 +308,24 @@ def getStartTurnEmbed(mlt, lead, pNum):
         url=images.getImage(2))
     return embed1
 
+def getHighStakesEmbed(mlt, iconList, iconList2, lead, pts, pNum):
+    embed1 = discord.Embed(title=f'**High stakes!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
+                           description=f'You chose to continue the turn of your opponent! You got *{pts} pts.* and can now roll the dice. However, if you farkle this turn, you\'ll loose *{pts} pts.* so watch out!')
+    embed1.add_field(name=f'Remaining dice:', value=' '.join(iconList), inline=True)
+    embed1.add_field(name=f'Inventory:', value=' '.join(iconList2), inline=True)
+    if lead:
+        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score gain because of your 1,5K+ lead (still applied on point loss).', value='',
+                         inline=False)
+    else:
+        embed1.add_field(name=f'Current multiplier: {mlt}x.', value='',
+                         inline=False)
+    embed1.add_field(name='The game will be terminated if you won\'t react within **1 minute**!', value='', inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
 def getHotDiceEmbed(pts, iconList, mlt, lead, pNum):
-    embed1 = discord.Embed(title=f'**Hot dice!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'{" ".join(iconList)} *- {pts}pts.*\nAll the dice were automatically melded! You can now re-roll all 6 dice again.')
+    embed1 = discord.Embed(title=f'**Hot dice!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'{" ".join(iconList)} *- {pts} pts.*\nAll the dice were automatically melded! You can now re-roll all 6 dice again.')
     if lead:
         embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your 1,5K+ lead.', value='',
                          inline=False)
@@ -263,7 +338,13 @@ def getHotDiceEmbed(pts, iconList, mlt, lead, pNum):
     return embed1
 
 def getFarkledEmbed(turnBank, iconList, pNum):
-    embed1 = discord.Embed(title=f'**You got farkled!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'{" ".join(iconList)}\nMelds can\'t be formed from the remaining dice! The score you earned this turn will be lost.\n\nPoints lost *- {turnBank}*')
+    embed1 = discord.Embed(title=f'**You got farkled!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'{" ".join(iconList)}\nMelds can\'t be formed from the remaining dice! The score you earned this turn will be lost.\n\nPoints lost *- {turnBank} pts.*')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getFailedHighStakeEmbed(turnBank, iconList, pts, pNum):
+    embed1 = discord.Embed(title=f'**High stake failed!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You got farkled... and lost the high stake.\n\n{" ".join(iconList)}\nMelds can\'t be formed from the remaining dice! The score you earned this turn will be lost.\n\n*{pts} pts.* were removed from your bank!')
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
@@ -290,7 +371,7 @@ def getAfterRollEmbed(iconList, iconList2, mlt, lead, pNum):
         url=images.getImage(2))
     return embed1
 def getAfterMeldEmbed(iconList, iconList2, meld, mlt, lead, pNum):
-    embed1 = discord.Embed(title=f'**Meld successful!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You melded **{meld[3]} × {meld[1]}** and got *{meld[2]}pts.* You can now select another meld, roll the dice or bank your score!')
+    embed1 = discord.Embed(title=f'**Meld successful!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You melded **{meld[3]} × {meld[1]}** and got *{meld[2]} pts.* You can now select another meld, roll the dice or bank your score!')
     embed1.add_field(name=f'Remaining dice:', value=' '.join(iconList), inline=True)
     embed1.add_field(name=f'Inventory:', value=' '.join(iconList2), inline=True)
     if lead:
