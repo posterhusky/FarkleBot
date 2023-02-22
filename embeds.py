@@ -105,7 +105,7 @@ def getNewGameEmbeds(self):
                      value=f'To prevent spam and bot exploits, you will not be able to use the /invite command or join the queue if you are in-game. Also, you can\'t invite someone in-game.',
                      inline=False)
     embed2.add_field(name='**Queue kick time**',
-                     value=f'To confirm that you\'re still here, you will be removed from the queue every so often and get pinged. If you join the queue within 30 seconds of the ping, your kick time will be doubled up to 16 minutes.',
+                     value=f'To confirm that you\'re still here, you will be removed from the queue every so often and get pinged.',
                      inline=False)
     embed2.add_field(name='**This channel is command-only**',
                      value=f'This channel is not for chatting, all messages sent here will be deleted.',
@@ -190,14 +190,14 @@ def getReadyTimeoutEmbed(p1, p2):
 
 def getGiveUpEmbed(user, pNum):
     embed1 = discord.Embed(title=f'**P{int(pNum)+1} gave up!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
-                           description=f'{user.mention} gave up!\n\nThis game will be deleted in **30 seconds**, you can save the replay if you need it.')
+                           description=f'{user.mention} gave up!\n\nThis game will be deleted in **15 seconds**, you can save the replay if you need it.')
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
 
 def getInteractionTimeoutEmbed(user):
     embed1 = discord.Embed(title=f'**Time\'s up!**', colour=discord.Colour.red(),
-                           description=f'The game was terminated due to {user.mention} idling!\n\nThis game will be deleted in **30 seconds**, you can save the replay if you need it.')
+                           description=f'The game was terminated due to {user.mention} idling!\n\nThis game will be deleted in **15 seconds**, you can save the replay if you need it.')
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
@@ -251,23 +251,31 @@ def getQueueGameEmbed(p1, p2):
         url=images.getImage(0))
     return embed1
 
-def getBothReadyEmbed(destUsr, p1, p2):
+def getBothReadyEmbed(destUsr, p1, p2, goal, ptLead, mltQty, mltQtt):
     embed1 = discord.Embed(title=f'**Starting the game...**', colour=discord.Colour.green(),
-                           description=f'Both players are ready! Starting the game...\n\nP1: {p1.mention}\nP2: {p2.mention}\n\n{destUsr.mention} starts!')
+                           description=f'Both players are ready! Starting the game...\n\nP1: {p1.mention}\nP2: {p2.mention}')
+    embed1.add_field(name='**Win condition:**', value=f'{goal} pts.', inline=True)
+    embed1.add_field(name='**Lead from:**', value=f'{ptLead} pts.', inline=True)
+    embed1.add_field(name='**Multiplier:**', value=f'+{mltQty}x every {mltQtt} turns.', inline=True)
+    embed1.add_field(name=f'**P{1 if destUsr==p1 else 2} starts!**', value=f'{destUsr.mention} was picked randomly to do the first turn!', inline=False)
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
 
-def getAiGameReadyEmbed(player):
+def getAiGameReadyEmbed(player, goal, ptLead, mltQty, mltQtt):
     embed1 = discord.Embed(title=f'**Game created!**', colour=discord.Colour.green(),
-                           description=f'The game against an AI was successfully created! Please note that you will still not be able to join the queue or invite someone during this game.\n\nP1: {player.mention}\nP2: Farkle bot\n\nYou start!')
+                           description=f'The game against an AI was successfully created! Please note that you will still not be able to join the queue or invite someone during this game.\n\nP1: {player.mention}\nP2: Farkle bot')
+    embed1.add_field(name='**Win condition:**', value=f'{goal} pts.', inline=True)
+    embed1.add_field(name='**Lead from:**', value=f'{ptLead} pts.', inline=True)
+    embed1.add_field(name='**Multiplier:**', value=f'+{mltQty}x every {mltQtt} turns.', inline=True)
+    embed1.add_field(name=f'**YOU start!**', value='', inline=False)
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
 
-def getMultiplierIncrEmbed(turns, multiplier):
+def getMultiplierIncrEmbed(turns, multiplier, incr):
     embed1 = discord.Embed(title=f'**Multiplier increased!**', colour=discord.Colour.blue(),
-                           description=f'The game was going on for {turns} turns and the multiplier was increased by **0,2x**!\n\n**Current multiplier: *{multiplier}x***')
+                           description=f'The game was going on for {turns} turns and the multiplier was increased by **{incr}x**!\n\n**Current multiplier: *{multiplier}x***')
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
@@ -300,7 +308,7 @@ def getStartTurnEmbed(mlt, lead, stake, pNum):
             value='',
             inline=False)
     if lead:
-        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your 1,5K+ lead.', value='',
+        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your point lead.', value='',
                          inline=False)
     else:
         embed1.add_field(name=f'Current multiplier: {mlt}x.', value='',
@@ -316,7 +324,7 @@ def getHighStakesEmbed(mlt, iconList, iconList2, lead, pts, pNum):
     embed1.add_field(name=f'Remaining dice:', value=' '.join(iconList), inline=True)
     embed1.add_field(name=f'Inventory:', value=' '.join(iconList2), inline=True)
     if lead:
-        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score gain because of your 1,5K+ lead (still applied on point loss).', value='',
+        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score gain because of your point lead (still applied on point loss).', value='',
                          inline=False)
     else:
         embed1.add_field(name=f'Current multiplier: {mlt}x.', value='',
@@ -329,7 +337,7 @@ def getHighStakesEmbed(mlt, iconList, iconList2, lead, pts, pNum):
 def getHotDiceEmbed(pts, iconList, mlt, lead, pNum):
     embed1 = discord.Embed(title=f'**Hot dice!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'{" ".join(iconList)} *- {pts} pts.*\nAll the dice were automatically melded! You can now re-roll all 6 dice again.')
     if lead:
-        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your 1,5K+ lead.', value='',
+        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your point lead.', value='',
                          inline=False)
     else:
         embed1.add_field(name=f'Current multiplier: {mlt}x.', value='',
@@ -362,7 +370,7 @@ def getAfterRollEmbed(iconList, iconList2, mlt, lead, pNum):
     embed1.add_field(name=f'Remaining dice:', value=' '.join(iconList), inline=True)
     embed1.add_field(name=f'Inventory:', value=' '.join(iconList2), inline=True)
     if lead:
-        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your 1,5K+ lead.', value='',
+        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your point lead.', value='',
                          inline=False)
     else:
         embed1.add_field(name=f'Current multiplier: {mlt}x.', value='',
@@ -377,7 +385,7 @@ def getAfterMeldEmbed(iconList, iconList2, meld, mlt, lead, pNum):
     embed1.add_field(name=f'Remaining dice:', value=' '.join(iconList), inline=True)
     embed1.add_field(name=f'Inventory:', value=' '.join(iconList2), inline=True)
     if lead:
-        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your 1,5K+ lead.', value='',
+        embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your point lead.', value='',
                          inline=False)
     else:
         embed1.add_field(name=f'Current multiplier: {mlt}x.', value='',
@@ -390,7 +398,7 @@ def getAfterMeldEmbed(iconList, iconList2, meld, mlt, lead, pNum):
 
 def getWinEmbed(winner, turns, pNum):
     embed1 = discord.Embed(title=f'**P{pNum+1} WON THE GAME!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
-                           description=f'Congratulations, {winner.mention}, you won this game in {turns} turns!\n\nThis game will be deleted in **45 seconds**, you can save the replay if you need it.')
+                           description=f'Congratulations, {winner.mention}, you won this game in {turns} turns!\n\nThis game will be deleted in **30 seconds**, you can save the replay if you need it.')
     embed1.set_thumbnail(
         url=images.getImage(0))
     return embed1

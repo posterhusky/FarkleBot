@@ -121,7 +121,7 @@ class QueuedPerson():
 
 
 class FarkleGame():
-    def __init__(self, id: int, state: int, players: tuple, channel: discord.TextChannel, latestMsg: discord.Message):
+    def __init__(self, id: int, state: int, players: tuple, channel: discord.TextChannel, latestMsg: discord.Message, goal: int, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float, leadAmount: int):
         self.id = id
         self.state = state
         self.players = players
@@ -136,13 +136,17 @@ class FarkleGame():
         self.melds = []
         self.latestEmbed = None
         self.embedList = []
-        self.multiplier = 1.0
+        self.multiplier = startMultiplier
+        self.mltQntt = multiplierQuantity
+        self.mltQty = multiplierQuality
         self.turnsQty = 0
         self.lead = None
         self.hurryUpMsg = None
         self.turnHistory = []
         self.highStakesPass = None
-        print('created game: ', players)
+        self.goal = goal
+        self.leadAmount = leadAmount
+        print('created game: ', [p.name for p in players])
 
     async def saveReplay(self, interaction: discord.Interaction):
         global replays
@@ -162,7 +166,8 @@ class FarkleGame():
         btns.add_item(btn)
         self.latestEmbed = embeds.getReplayEmbed()
         self.latestMsg = await self.channel.send(embed=self.latestEmbed, view=btns)
-        await asyncio.sleep(15)
+        print('game ended:',[p.name for p in self.players])
+        await asyncio.sleep(delay)
         await self.channel.delete()
         while self in currentGames:
             currentGames.remove(self)
@@ -175,7 +180,7 @@ class FarkleGame():
                             turnBank=self.bank[2], qty=self.turnsQty, pNum=self.turn, history=self.turnHistory)
 
     async def startTurn(self):
-        if abs(self.bank[0] - self.bank[1]) >= 1500:
+        if abs(self.bank[0] - self.bank[1]) >= self.leadAmount and self.leadAmount > 0:
             self.lead = 0 if self.bank[0] > self.bank[1] else 1
         else:
             self.lead = -1
@@ -184,9 +189,9 @@ class FarkleGame():
         self.tableDice = [0] * 6
         self.invDice = []
         self.turnsQty += 1
-        if self.turnsQty % 5 == 0:
-            self.multiplier = int(self.multiplier*10 + 2)/10
-            self.embedList += [embeds.getMultiplierIncrEmbed(multiplier=self.multiplier, turns=self.turnsQty)]
+        if self.turnsQty % self.mltQntt == 0:
+            self.multiplier = round(self.multiplier + self.mltQty, 3)
+            self.embedList += [embeds.getMultiplierIncrEmbed(multiplier=self.multiplier, turns=self.turnsQty, incr=self.mltQty)]
             await self.channel.send(embed=self.embedList[-1])
             await asyncio.sleep(1)
         btns = View()
@@ -275,7 +280,7 @@ class FarkleGame():
         await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
         self.embedList += [embeds.getGiveUpEmbed(user=interaction.user, pNum= int(interaction.user == self.players[1]))]
         await self.channel.send(embed=self.embedList[-1])
-        await self.terminateGame(30)
+        await self.terminateGame(15)
 
     async def bankScore(self, interaction: discord.Interaction):
         if interaction.user != self.players[self.turn]:
@@ -290,11 +295,11 @@ class FarkleGame():
         self.embedList += self.getTurnRecap()
         await asyncio.sleep(2)
         await self.latestMsg.edit(embeds=self.getTurnRecap(), view=None)
-        if self.bank[self.turn] >= 10000:
+        if self.bank[self.turn] >= self.goal:
             self.embedList += [
                 embeds.getWinEmbed(winner=self.players[self.turn], pNum=self.turn, turns=self.turnsQty)]
             await self.channel.send(embed=self.embedList[-1])
-            await self.terminateGame(45)
+            await self.terminateGame(30)
             return
         self.highStakesPass = None
         self.turn += 1
@@ -325,7 +330,7 @@ class FarkleGame():
         await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
         self.embedList += [embeds.getInteractionTimeoutEmbed(user=self.players[self.turn])]
         await self.channel.send(embed=self.embedList[-1])
-        await self.terminateGame(30)
+        await self.terminateGame(15)
 
     async def botRollDice(self): # bot action ========================================================
         if self.turn == 0:
@@ -407,7 +412,7 @@ class FarkleGame():
         await asyncio.sleep(1.5)
         if self.turn == 0:
             return
-        if self.bank[1] + self.bank[2] >= 10000:
+        if self.bank[1] + self.bank[2] >= self.goal:
             await self.botBankScore()
             return
         if self.melds != []:
@@ -429,11 +434,11 @@ class FarkleGame():
         self.embedList += self.getTurnRecap()
         await asyncio.sleep(2)
         await self.latestMsg.edit(embeds=self.getTurnRecap(), view=None)
-        if self.bank[1] >= 10000:
+        if self.bank[1] >= self.goal:
             self.embedList += [
                 embeds.getWinEmbed(winner=self.players[1], pNum=1, turns=self.turnsQty)]
             await self.channel.send(embed=self.embedList[-1])
-            await self.terminateGame(45)
+            await self.terminateGame(30)
             return
         self.highStakesPass = None
         self.turn = 0
@@ -706,6 +711,7 @@ async def on_raw_reaction_add(payload):
     farkleCentral = bot.guilds[0]
     channel = discord.utils.get(farkleCentral.channels, id=payload.channel_id)
     message = await channel.fetch_message(payload.message_id)
+    print('reaction added:', channel, message, payload.emoji, payload.member)
     if str(payload.emoji) == '✅':
         if channel == prefChannel:
             if payload.message_id == idList.pref2Msg:
@@ -737,7 +743,7 @@ async def on_raw_reaction_add(payload):
         await payload.member.send(embed=embeds.getQueueJoinEmbed())
         queue += [QueuedPerson(user=payload.member)]
         if len(queue) >= 2:
-            await createUserGame(p1=queue[0].user, p2=queue[1].user, embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user))
+            await createUserGame(p1=queue[0].user, p2=queue[1].user, embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user), leadAmount=1500, startMultiplier=1.0, multiplierQuality=0.2, multiplierQuantity=5, goal=10000)
             await message.remove_reaction(emoji='🇶', member=queue[0].user)
             await message.remove_reaction(emoji='🇶', member=queue[1].user)
             for i in queue:
@@ -755,6 +761,7 @@ async def on_raw_reaction_remove(payload):
     channel = discord.utils.get(farkleCentral.channels, id=payload.channel_id)
     message = await channel.fetch_message(payload.message_id)
     member = discord.utils.get(farkleCentral.members, id=payload.user_id)
+    print('reaction removed:', channel, message, payload.emoji, member)
     if channel == prefChannel:
         if payload.message_id == idList.pref2Msg:
             await member.remove_roles(annPingRole)
@@ -783,14 +790,29 @@ async def kickQueuedMember(user: discord.User):
     await user.send(embed=embeds.getQueueKickEmbed())
 
 @bot.slash_command(name='invite', guild_ids=[idList.farkleCentralId], description='Invite your friend to a farkle game')
-async def invite(ctx, user:discord.Option(discord.User, 'The user you want to invite', required=True)):
+async def invite(ctx,
+                 user:discord.Option(discord.User, 'The user you want to invite', required=True),
+                goal:discord.Option(int, 'The amount of points needed to win the game', default=10000),
+                lead_amount:discord.Option(int, 'The amount of point lead needed to disable the multiplier (set to 0 to disable)', default=1500),
+                multiplier_start:discord.Option(float, 'The multiplier value on start', default=1.0),
+                multiplier_quality:discord.Option(float, 'By how much the multiplier should increase', default=0.2),
+                multiplier_quantity:discord.Option(int, 'How often the multiplier should increase (in turns)', default=5)
+                 ):
+    if goal <= 0:
+        goal = 10000
+    if multiplier_start <= 0:
+        multiplier_start = 1.0
+    if multiplier_quality < 0:
+        multiplier_quality = 0.2
+    if multiplier_quantity <= 0:
+        multiplier_quantity = 5
     global totalGames, currentGames
     if ctx.author == user:
         await ctx.respond(embed=embeds.getSelfChallengeErrEmbed(bot.user), ephemeral=True)
         return
     if user == bot.user:
         await ctx.respond(embed=embeds.getAiGameStartingEmbed(), ephemeral=True)
-        await createAiGame(player=ctx.author)
+        await createAiGame(player= ctx.author, startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity, multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
         return
     for i in currentGames:
         if ctx.author in i.players and i.state != 2:
@@ -806,7 +828,7 @@ async def invite(ctx, user:discord.Option(discord.User, 'The user you want to in
         await ctx.respond(embed=embeds.getHasDisabledInvitesEmbed(user), ephemeral=True)
         return
     await ctx.respond(embed=embeds.getChallengeCreationEmbed(user), ephemeral=True)
-    await createUserGame(ctx.author, user, embeds.getInviteEmbed(ctx.author, user))
+    await createUserGame(ctx.author, user, embeds.getInviteEmbed(ctx.author, user), startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity, multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
 
 @bot.slash_command(name='share', guild_ids=[idList.farkleCentralId], description='Share you replay with a friend')
 async def invite(ctx, user:discord.Option(discord.User, 'The user you want to start/stop sharing the replay', required=True), status:discord.Option(bool, 'True if you want to add the user, False if you want to remove the user', required=True)):
@@ -821,20 +843,20 @@ async def invite(ctx, user:discord.Option(discord.User, 'The user you want to st
             return
     await ctx.respond(embed=embeds.getNotInReplayChannelEmbed(), ephemeral=True)
 
-async def createAiGame(player):
+async def createAiGame(player, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float, leadAmount: int, goal: int):
     global totalGames, currentGames
     channel = await farkleCentral.create_text_channel(name=f'game-{totalGames}',category=gamesCategory)
     await channel.set_permissions(farkleCentral.default_role, read_messages=False, send_messages=False)
     await channel.set_permissions(regularRole, read_messages=False, send_messages=False)
     await channel.set_permissions(player, read_messages=True, send_messages=False)
-    temp = FarkleGame(id=totalGames, state=1, players=(player, bot.user), channel=channel, latestMsg= await channel.send(embed=embeds.getAiGameReadyEmbed(player=player)))
+    temp = FarkleGame(id=totalGames, state=1, players=(player, bot.user), channel=channel, latestMsg= await channel.send(embed=embeds.getAiGameReadyEmbed(player=player, goal=goal, ptLead=leadAmount, mltQtt=multiplierQuantity, mltQty=multiplierQuality)), startMultiplier=startMultiplier, multiplierQuantity=multiplierQuantity, multiplierQuality=multiplierQuality, leadAmount=leadAmount, goal=goal)
     currentGames += [temp]
-    temp.embedList += [embeds.getAiGameReadyEmbed(player=player)]
+    temp.embedList += [embeds.getAiGameReadyEmbed(player=player, goal=goal, ptLead=leadAmount, mltQtt=multiplierQuantity, mltQty=multiplierQuality)]
     totalGames += 1
     await totalGamesMsg.edit(f'{totalGames}')
     await temp.startTurn()
 
-async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embed):
+async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embed, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float, leadAmount: int, goal: int):
     global totalGames, currentGames
     channel = await farkleCentral.create_text_channel(name=f'game-{totalGames}',
                                                       category=gamesCategory)
@@ -844,7 +866,7 @@ async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embe
     await channel.set_permissions(p2, read_messages=True, send_messages=False)
     msg = await channel.send(embed=embed)
     await msg.add_reaction('✅')
-    temp = FarkleGame(id=totalGames, state=0, players=(p1, p2), channel=channel, latestMsg=msg)
+    temp = FarkleGame(id=totalGames, state=0, players=(p1, p2), channel=channel, latestMsg=msg, startMultiplier=startMultiplier, multiplierQuantity=multiplierQuantity, multiplierQuality=multiplierQuality, leadAmount=leadAmount, goal=goal)
     currentGames += [temp]
     totalGames += 1
     await totalGamesMsg.edit(f'{totalGames}')
