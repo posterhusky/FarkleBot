@@ -69,19 +69,19 @@ def getServerRuleEmbeds():
     embed1.set_thumbnail(
         url=images.getImage(1))
     embed1.add_field(name='**☑ Speak mainly English**',
-                     value='This is mainly an english-speaking server, so please write in english. (https://translate.google.com/?sl=auto&tl=en)',
+                     value='This is mainly an English-speaking server, so please write in English. (https://translate.google.com/?sl=auto&tl=en)',
                      inline=False)
     embed1.add_field(name='**☑ Respect everyone**',
                      value='Respect everyone. Don\'t insult or harass other users.',
                      inline=False)
-    embed1.add_field(name='**☑ Keep it sfw**',
-                     value='Hide stuff that you think is nsfw under a spoiler, or better, just don\'t post it. This includes usernames and other profile info.',
+    embed1.add_field(name='**☑ Keep it SFW**',
+                     value='Hide stuff that you think is NSFW under a spoiler, or better, just don\'t post it. This includes usernames and other profile info.',
                      inline=False)
-    embed1.add_field(name='**☑ Don\'t ping**',
-                     value='Please don\'t ping people for no apparent reason. If you don\'t like recieving pings, you can turn off invites in <#1076954499421319198>.',
+    embed1.add_field(name='**☑ Don\'t spam**',
+                     value='Don\'t send repetitive messages too often in chats as well as in the sections for bot commands.',
                      inline=False)
-    embed1.add_field(name='**☑ Keep it in topic**',
-                     value='<#1077318483777437758> is a general chat without a specific topic, however the threads of this chat generally have a topic that you should consider respecting. You can reate your own thread with any topic if you want.',
+    embed1.add_field(name='**☑ Don\'t overload the bot**',
+                     value='If one of the bot\'s interactions or commands doesn\'t work, please wait for a few seconds before using it again.',
                      inline=False)
     embed1.add_field(name='**A thing to note is that the project crew is able to mute anyone they want.\nYou can find the rules of the game in <#1073356373515042897>\nHave Fun!**', value='', inline=False)
     return embed1
@@ -155,7 +155,7 @@ def getAiGameStartingEmbed():
 
 def getQueueJoinEmbed():
     embed1 = discord.Embed(title=f'**Joined the queue!**', colour=discord.Colour.blue(),
-                           description=f'You have joined the queue! A game will start as soon as there will be 2 players in the queue. To leave the queue, remove the reaction.\n\nTo confirm your presence, you will be kicked in **10 minutes** and will recieve a dm notifiying you about this.')
+                           description=f'You have joined the queue! A game will start as soon as there will be 2 players in the queue. To leave the queue, remove the reaction.\n\nTo confirm your presence, you will be kicked in **10 minutes** and will receive a dm notifying you about this.')
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
@@ -190,14 +190,14 @@ def getReadyTimeoutEmbed(p1, p2):
 
 def getGiveUpEmbed(user, pNum):
     embed1 = discord.Embed(title=f'**P{int(pNum)+1} gave up!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
-                           description=f'{user.mention} gave up!\n\nThis game will be deleted in **15 seconds**, you can save the replay if you need it.')
+                           description=f'{user.mention} gave up!\n\nThis game will be deleted in **30 seconds**, you can save the replay if you need it.')
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
 
 def getInteractionTimeoutEmbed(user):
     embed1 = discord.Embed(title=f'**Time\'s up!**', colour=discord.Colour.red(),
-                           description=f'The game was terminated due to {user.mention} idling!\n\nThis game will be deleted in **15 seconds**, you can save the replay if you need it.')
+                           description=f'The game was terminated due to {user.mention} idling!\n\nThis game will be deleted in **30 seconds**, you can save the replay if you need it.')
     embed1.set_thumbnail(
         url=images.getImage(1))
     return embed1
@@ -275,19 +275,21 @@ def getMultiplierIncrEmbed(turns, multiplier):
 def getTurnRecap(destUsr, p1Bank, p2Bank, turnBank, qty, pNum, history):
     embed1 = discord.Embed(title=f'**{qty}. P{pNum + 1}\'s turn!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
                            description=f'It\'s {destUsr.mention}\'s turn! Check the message below to see what you can do!')
-    embed1.add_field(name='**Turn history:**', value='', inline=False)
-    if history == []:
-        embed1.add_field(name='Nothing here yet...', value='', inline=False)
-    else:
-        for n, i in enumerate(history):
-            embed1.add_field(name=f'{n+1}. {i[0]}', value=i[1], inline=True)
-    embed1.add_field(name='', value='', inline=False)
     embed1.add_field(name='**P1\'s bank:**', value=p1Bank, inline=True)
     embed1.add_field(name='**P2\'s bank:**', value=p2Bank, inline=True)
     embed1.add_field(name='**Turn score:**', value=turnBank, inline=True)
     embed1.set_thumbnail(
         url=images.getImage(not pNum))
-    return embed1
+    turnEmbeds = [discord.Embed(title='**Turn history**', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='All your actions during the turn are displayed here!')]
+    if history == []:
+        turnEmbeds[0].add_field(name='Nothing here yet...', value='', inline=False)
+    else:
+        while (len(history)-1)//24 + 1 != len(turnEmbeds):
+            turnEmbeds += [discord.Embed(title='', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='')]
+        for n, i in enumerate(history):
+            turnEmbeds[n//24].add_field(name=f'{n+1}. {i[0]}', value=i[1], inline=True)
+    turnEmbeds[0].set_thumbnail(url=images.getImage(2))
+    return [embed1] + turnEmbeds
 
 def getStartTurnEmbed(mlt, lead, stake, pNum):
     embed1 = discord.Embed(title=f'**It\'s dice rolling time!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
@@ -388,7 +390,7 @@ def getAfterMeldEmbed(iconList, iconList2, meld, mlt, lead, pNum):
 
 def getWinEmbed(winner, turns, pNum):
     embed1 = discord.Embed(title=f'**P{pNum+1} WON THE GAME!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
-                           description=f'Congratulations, {winner.mention}, you won this game in {turns} turns!\n\nThis game will be deleted in **30 seconds**, you can save the replay if you need it.')
+                           description=f'Congratulations, {winner.mention}, you won this game in {turns} turns!\n\nThis game will be deleted in **45 seconds**, you can save the replay if you need it.')
     embed1.set_thumbnail(
         url=images.getImage(0))
     return embed1
@@ -403,9 +405,51 @@ def getReplayEmbed():
     embed1.set_thumbnail(url=images.getImage(2))
     return embed1
 
+def getReplaySavedEmbed():
+    embed1 = discord.Embed(title=f'**Replay saved!**', colour=discord.Colour.yellow(),
+                           description=f'Your replay was saved!\n\nYou can check the replays category to see your replays.')
+    embed1.set_thumbnail(url=images.getImage(2))
+    return embed1
+
+def getReplaySharedEmbed(user):
+    embed1 = discord.Embed(title=f'**User added!**', colour=discord.Colour.yellow(),
+                           description=f'{user.mention} is now able to see this replay!\n\nDid you know that you can hide this replay from someone by putting *False* in the *status* field?')
+    embed1.set_thumbnail(url=images.getImage(2))
+    return embed1
+
+def getReplayUnsharedEmbed(user):
+    embed1 = discord.Embed(title=f'**User removed!**', colour=discord.Colour.yellow(),
+                           description=f'{user.mention} will no longer be able to see this replay!')
+    embed1.set_thumbnail(url=images.getImage(2))
+    return embed1
+
+def getReplayInfoEmbed(host, id, shared):
+    embed1 = discord.Embed(title=f'**Replay info & actions.**', colour=discord.Colour.yellow(),
+                           description=f'Replay {id} is saved by {host.mention}.\n\nShared to:\n' + ', '.join([str(i.mention) for i in shared]) + '\n\nIf you\'re the host, you can delete this replay or show it to someone by using the */share* command.')
+    embed1.set_thumbnail(url=images.getImage(2))
+    return embed1
+
 def getGiveUpConfirmEmbed():
     embed1 = discord.Embed(title=f'**Are you sure?**', colour=discord.Colour.red(),
                            description=f'You are about to give up and quit the game, please confirm that this action is intentional.')
+    embed1.set_thumbnail(url=images.getImage(1))
+    return embed1
+
+def getReplayDeleteConfirmEmbed():
+    embed1 = discord.Embed(title=f'**Are you sure?**', colour=discord.Colour.red(),
+                           description=f'You are about to delete the replay, please confirm that this action is intentional.')
+    embed1.set_thumbnail(url=images.getImage(1))
+    return embed1
+
+def getNoReplayRightsEmbed():
+    embed1 = discord.Embed(title=f'**You can\'t manage this replay!**', colour=discord.Colour.red(),
+                           description=f'Only the host of this replay can manage it.')
+    embed1.set_thumbnail(url=images.getImage(1))
+    return embed1
+
+def getNotInReplayChannelEmbed():
+    embed1 = discord.Embed(title=f'**This is a replay command!**', colour=discord.Colour.red(),
+                           description=f'You can only execute this command in a replay channel.')
     embed1.set_thumbnail(url=images.getImage(1))
     return embed1
 
