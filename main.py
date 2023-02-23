@@ -146,6 +146,7 @@ class FarkleGame():
         self.highStakesPass = None
         self.goal = goal
         self.leadAmount = leadAmount
+        self.isHighStake = False
         print('created game: ', [p.name for p in players])
 
     async def saveReplay(self, interaction: discord.Interaction):
@@ -189,6 +190,7 @@ class FarkleGame():
         self.tableDice = [0] * 6
         self.invDice = []
         self.turnsQty += 1
+        self.isHighStake = False
         if self.turnsQty % self.mltQntt == 0:
             self.multiplier = round(self.multiplier + self.mltQty, 3)
             self.embedList += [embeds.getMultiplierIncrEmbed(multiplier=self.multiplier, turns=self.turnsQty, incr=self.mltQty)]
@@ -222,6 +224,7 @@ class FarkleGame():
                 self.bank[2] = self.highStakesPass[0]
                 self.tableDice = self.highStakesPass[1]
                 self.invDice = self.highStakesPass[2]
+                self.isHighStake = True
                 btn3 = Button(label='Give up', emoji='🏳', style=discord.ButtonStyle.red, disabled=False)
                 btn3.callback = self.giveUp
                 btns = View()
@@ -249,6 +252,7 @@ class FarkleGame():
         self.bank[2] = self.highStakesPass[0]
         self.tableDice = self.highStakesPass[1]
         self.invDice = self.highStakesPass[2]
+        self.isHighStake = True
         btn1 = Button(label='Roll dice', emoji='🎲', style=discord.ButtonStyle.green, disabled=False)
         btn2 = Button(label='Bank score', emoji='💰', style=discord.ButtonStyle.green, disabled=True)
         btn3 = Button(label='Give up', emoji='🏳', style=discord.ButtonStyle.red, disabled=False)
@@ -355,11 +359,11 @@ class FarkleGame():
         if self.melds == []:
             if self.turn == 0:
                 return
-            if self.highStakesPass == None or len(self.turnHistory) > 2:
+            if self.isHighStake == False or len(self.turnHistory) > 2:
                 self.latestEmbed = embeds.getFarkledEmbed(turnBank=self.bank[2], pNum=1, iconList=[dice[i] for i in self.tableDice])
                 self.turnHistory += [('Rolled & farkled:', ' '.join([dice[i] for i in self.tableDice]))]
                 await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
-                if self.highStakesPass == None:
+                if self.isHighStake == False:
                     self.highStakesPass = (self.bank[2] if self.bank[2] > 1000 else 1000, self.tableDice, self.invDice)
                 else:
                     self.highStakesPass = None
@@ -370,10 +374,7 @@ class FarkleGame():
                 await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
                 self.bank[1] = self.bank[1] - 500*self.multiplier if self.bank[1] > 500 else 0
                 self.highStakesPass = None
-            for n, i in enumerate(self.embedList):
-                if i == None:
-                    self.embedList[n] = self.getTurnRecap()
-                    break
+            self.embedList += self.getTurnRecap()
             await asyncio.sleep(2)
             await self.latestMsg.edit(embeds=self.getTurnRecap(), view=None)
             self.turn = 0
@@ -475,11 +476,11 @@ class FarkleGame():
             self.task = asyncio.create_task(self.cancelIdleUser())
             return
         if self.melds == []:
-            if self.highStakesPass == None or len(self.turnHistory) != 1:
+            if self.isHighStake == False or len(self.turnHistory) != 1:
                 self.latestEmbed = embeds.getFarkledEmbed(turnBank=self.bank[2], pNum=self.turn, iconList=[dice[i] for i in self.tableDice])
                 self.turnHistory += [('Rolled & farkled:', ' '.join([dice[i] for i in self.tableDice]))]
                 await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
-                if self.highStakesPass == None:
+                if self.isHighStake == False:
                     self.highStakesPass = (self.bank[2] if self.bank[2] > 1000 else 1000, self.tableDice, self.invDice)
                 else:
                     self.highStakesPass = None
@@ -492,10 +493,7 @@ class FarkleGame():
                 if self.bank[self.turn] < 0:
                     self.bank[self.turn] = 0
                 self.highStakesPass = None
-            for n, i in enumerate(self.embedList):
-                if i == None:
-                    self.embedList[n] = self.getTurnRecap()
-                    break
+            self.embedList += self.getTurnRecap()
             await asyncio.sleep(2)
             await self.latestMsg.edit(embeds=self.getTurnRecap(), view=None)
             self.turn += 1
@@ -686,6 +684,8 @@ async def on_message(message: discord.Message):
             i = await message.channel.send(embed=embeds.getQueuePingEmbed())
             await i.add_reaction('✅')
         elif message.content == '$stopbot':
+            await message.channel.send('stopping...')
+            print('stopping bot as requested by', message.author.name)
             await bot.close()
 
     for i in currentGames:
