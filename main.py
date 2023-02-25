@@ -5,6 +5,8 @@ import asyncio
 import idList
 from discord.ui import View, Button
 
+print('starting bot...')
+
 bot = discord.Bot(intents=discord.Intents().all())
 farkleCentral, regularRole, adminRole, gamesCategory, replaysCategory, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel, *_ = [None]*50
 
@@ -117,7 +119,18 @@ async def readReplayData():
 class QueuedPerson():
     def __init__(self, user: discord.user):
         self.user = user
-        self.task = asyncio.create_task(kickQueuedMember(self.user))
+        self.task = asyncio.create_task(self.kickQueuedMember())
+
+    async def kickQueuedMember(self):
+        try:
+            await asyncio.sleep(600)
+        except:
+            return
+        print('user got kicked from queue:', self.user.name)
+        await qMessage.remove_reaction(emoji='🇶', member=self.user)
+        await self.user.send(embed=embeds.getQueueKickEmbed())
+        while self in queue:
+            queue.remove(self)
 
 
 class FarkleGame():
@@ -664,6 +677,8 @@ async def on_ready():
 async def on_message(message: discord.Message):
     if message.author == bot.user:
         return
+    if message.channel == discord.channel.DMChannel:
+        return
     if adminRole in message.author.roles:
         if message.content == '$gamerules':
             await message.channel.send(embeds=embeds.getGameRuleEmbeds())
@@ -711,7 +726,7 @@ async def on_raw_reaction_add(payload):
     farkleCentral = bot.guilds[0]
     channel = discord.utils.get(farkleCentral.channels, id=payload.channel_id)
     message = await channel.fetch_message(payload.message_id)
-    print('reaction added:', channel, message, payload.emoji, payload.member)
+    print('reaction added:', channel.name, message.content, payload.emoji, payload.member.name)
     if str(payload.emoji) == '✅':
         if channel == prefChannel:
             if payload.message_id == idList.pref2Msg:
@@ -736,8 +751,10 @@ async def on_raw_reaction_add(payload):
                     await i.startTurn()
                 break
     elif str(payload.emoji) == '🇶' and payload.channel_id == idList.newGameChannel:
+        print('player joined queue:', payload.member.name)
         for i in currentGames:
             if payload.member in i.players:
+                print('but was removed due to being in-game:', payload.member.name, 'in', i.players[0], 'vs', i.players[1])
                 await message.remove_reaction(emoji='🇶', member=payload.member)
                 return
         await payload.member.send(embed=embeds.getQueueJoinEmbed())
@@ -746,6 +763,7 @@ async def on_raw_reaction_add(payload):
             await createUserGame(p1=queue[0].user, p2=queue[1].user, embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user), leadAmount=1500, startMultiplier=1.0, multiplierQuality=0.2, multiplierQuantity=5, goal=10000)
             await message.remove_reaction(emoji='🇶', member=queue[0].user)
             await message.remove_reaction(emoji='🇶', member=queue[1].user)
+            print('Queue full, starting game:')
             for i in queue:
                 i.task.cancel()
             queue = []
@@ -757,11 +775,10 @@ async def on_raw_reaction_add(payload):
 @bot.event
 async def on_raw_reaction_remove(payload):
     global queue
-    farkleCentral = bot.guilds[0]
     channel = discord.utils.get(farkleCentral.channels, id=payload.channel_id)
     message = await channel.fetch_message(payload.message_id)
     member = discord.utils.get(farkleCentral.members, id=payload.user_id)
-    print('reaction removed:', channel, message, payload.emoji, member)
+    print('reaction removed:', channel.name, message.content, payload.emoji, member.name)
     if channel == prefChannel:
         if payload.message_id == idList.pref2Msg:
             await member.remove_roles(annPingRole)
@@ -769,25 +786,16 @@ async def on_raw_reaction_remove(payload):
             await member.remove_roles(qPingRole)
         return
     if str(payload.emoji) == '🇶' and payload.channel_id == idList.newGameChannel:
+        print('player left the queue:', member.name)
         for i in queue:
             if i.user == member:
                 i.task.cancel()
                 queue = [j for j in queue if j != i]
                 break
+        else:
+            return # in case a player got kicked (was already removed in QueuedUser.kickQueuedMember())
         await member.send(embed=embeds.getQueueLeaveEmbed())
         await qDisplayChannel.edit(name=f'Queued members: {len(queue)}')
-
-async def kickQueuedMember(user: discord.User):
-    global queue
-    try:
-        await asyncio.sleep(60)
-    except:
-        return
-    for n, i in enumerate(queue):
-        if i.user == user:
-            del queue[n]
-            break
-    await user.send(embed=embeds.getQueueKickEmbed())
 
 @bot.slash_command(name='invite', guild_ids=[idList.farkleCentralId], description='Invite your friend to a farkle game')
 async def invite(ctx,
@@ -882,5 +890,8 @@ async def cancelUnreadyGame(temp, msg, channel, p1, p2):
     await temp.terminateGame(15)
 
 f = open('token.txt', 'r')
-bot.run(f.read())
+token = f.read()
 f.close()
+bot.run(token)
+
+print('bot stopped!')
