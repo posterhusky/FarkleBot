@@ -8,7 +8,8 @@ from discord.ui import View, Button
 print('starting bot...')
 
 bot = discord.Bot(intents=discord.Intents().all())
-farkleCentral, regularRole, adminRole, gamesCategory, replaysCategory, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel, *_ = [None]*50
+farkleCentral, regularRole, adminRole, gamesCategory, replaysCategory, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel, *_ = [
+                                                                                                                                                                                                                                     None] * 50
 
 totalGames = 0
 currentGames = []
@@ -17,8 +18,10 @@ replays = []
 
 dice = '<:die1:1073714606813483071> <:die2:1073714605051887739> <:die3:1073714602350743692> <:die4:1073714600924692552> <:die5:1073714599691550880> <:die6:1073714597359521822>'.split()
 
+
 class Replay():
-    def __init__(self, host: discord.User, channel: discord.TextChannel, sharedAccess: list, id: int, infoMsg = None, saveMsg: discord.Message = None):
+    def __init__(self, host: discord.User, channel: discord.TextChannel, sharedAccess: list, id: int, infoMsg=None,
+                 saveMsg: discord.Message = None):
         self.host = host
         self.channel = channel
         self.sharedAccess = sharedAccess
@@ -45,7 +48,8 @@ class Replay():
         btn1.callback = self.deleteReplay
         btns = View()
         btns.add_item(btn1)
-        self.infoMsg = await self.channel.send(embed=embeds.getReplayInfoEmbed(host=self.host, shared=self.sharedAccess, id=self.id), view=btns)
+        self.infoMsg = await self.channel.send(
+            embed=embeds.getReplayInfoEmbed(host=self.host, shared=self.sharedAccess, id=self.id), view=btns)
         await self.channel.set_permissions(self.host, read_messages=True, send_messages=True)
         for i in self.sharedAccess:
             await self.channel.set_permissions(i, read_messages=True, send_messages=False)
@@ -73,23 +77,27 @@ class Replay():
         if user not in self.sharedAccess:
             await self.channel.set_permissions(user, read_messages=True, send_messages=False)
             self.sharedAccess += [user]
-            await self.saveMsg.edit(content=f'{self.id};{self.host.id};{self.channel.id};{self.infoMsg.id};{"^".join([str(i.id) for i in self.sharedAccess])}')
+            await self.saveMsg.edit(
+                content=f'{self.id};{self.host.id};{self.channel.id};{self.infoMsg.id};{"^".join([str(i.id) for i in self.sharedAccess])}')
             btn1 = Button(label='Delete replay', emoji='🗑', style=discord.ButtonStyle.red)
             btn1.callback = self.deleteReplay
             btns = View()
             btns.add_item(btn1)
-            await self.infoMsg.edit(embed=embeds.getReplayInfoEmbed(host=self.host, shared=self.sharedAccess, id=self.id), view=btns)
+            await self.infoMsg.edit(
+                embed=embeds.getReplayInfoEmbed(host=self.host, shared=self.sharedAccess, id=self.id), view=btns)
 
     async def removeMember(self, user: discord.user):
         if user in self.sharedAccess:
             await self.channel.set_permissions(user, read_messages=False, send_messages=False)
             self.sharedAccess.remove(user)
-            await self.saveMsg.edit(content=f'{self.id};{self.host.id};{self.channel.id};{self.infoMsg.id};{"^".join([str(i.id) for i in self.sharedAccess])}')
+            await self.saveMsg.edit(
+                content=f'{self.id};{self.host.id};{self.channel.id};{self.infoMsg.id};{"^".join([str(i.id) for i in self.sharedAccess])}')
             btn1 = Button(label='Delete replay', emoji='🗑', style=discord.ButtonStyle.red)
             btn1.callback = self.deleteReplay
             btns = View()
             btns.add_item(btn1)
-            await self.infoMsg.edit(embed=embeds.getReplayInfoEmbed(host=self.host, shared=self.sharedAccess, id=self.id), view=btns)
+            await self.infoMsg.edit(
+                embed=embeds.getReplayInfoEmbed(host=self.host, shared=self.sharedAccess, id=self.id), view=btns)
 
 
 async def readReplayData():
@@ -103,8 +111,8 @@ async def readReplayData():
             channel=discord.utils.get(farkleCentral.channels, id=int(rawData[2])),
             sharedAccess=[discord.utils.get(farkleCentral.members, id=int(i)) for i in rawData[4].split('^')],
             id=int(rawData[0]),
-            infoMsg= None,
-            saveMsg= i
+            infoMsg=None,
+            saveMsg=i
         )
         temp.infoMsg = await temp.channel.fetch_message(rawData[3])
         replays += [temp]
@@ -112,8 +120,8 @@ async def readReplayData():
         btn1.callback = temp.deleteReplay
         btns = View()
         btns.add_item(btn1)
-        await temp.infoMsg.edit(embed=embeds.getReplayInfoEmbed(host=temp.host, shared=temp.sharedAccess, id=temp.id), view=btns)
-
+        await temp.infoMsg.edit(embed=embeds.getReplayInfoEmbed(host=temp.host, shared=temp.sharedAccess, id=temp.id),
+                                view=btns)
 
 
 class QueuedPerson():
@@ -134,7 +142,8 @@ class QueuedPerson():
 
 
 class FarkleGame():
-    def __init__(self, id: int, state: int, players: tuple, channel: discord.TextChannel, latestMsg: discord.Message, goal: int, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float, leadAmount: int):
+    def __init__(self, id: int, state: int, players: tuple, channel: discord.TextChannel, latestMsg: discord.Message,
+                 goal: int, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float, leadAmount: int):
         self.id = id
         self.state = state
         self.players = players
@@ -142,7 +151,7 @@ class FarkleGame():
         self.turn = 0
         self.bank = [0, 0, 0]
         self.msgCount = 0
-        self.tableDice = [0]*6
+        self.tableDice = [0] * 6
         self.invDice = []
         self.latestMsg = latestMsg
         self.task = None
@@ -165,12 +174,13 @@ class FarkleGame():
     async def saveReplay(self, interaction: discord.Interaction):
         global replays
         await interaction.response.send_message(embed=embeds.getReplaySavedEmbed(), ephemeral=True)
-        temp = Replay(sharedAccess=[self.players[1] if interaction.user == self.players[0] else self.players[0]], host=interaction.user,
-                      channel=await farkleCentral.create_text_channel(name=f'replay-{self.id}', category=replaysCategory),
-                      id=self.id, infoMsg= None)
+        temp = Replay(sharedAccess=[self.players[1] if interaction.user == self.players[0] else self.players[0]],
+                      host=interaction.user,
+                      channel=await farkleCentral.create_text_channel(name=f'replay-{self.id}',
+                                                                      category=replaysCategory),
+                      id=self.id, infoMsg=None)
         replays += [temp]
         await temp.uploadReplay(embedList=self.embedList)
-
 
     async def terminateGame(self, delay):
         self.state = 2
@@ -180,7 +190,7 @@ class FarkleGame():
         btns.add_item(btn)
         self.latestEmbed = embeds.getReplayEmbed()
         self.latestMsg = await self.channel.send(embed=self.latestEmbed, view=btns)
-        print('game ended:',[p.name for p in self.players])
+        print('game ended:', [p.name for p in self.players])
         await asyncio.sleep(delay)
         await self.channel.delete()
         while self in currentGames:
@@ -191,7 +201,7 @@ class FarkleGame():
 
     def getTurnRecap(self) -> list:
         return embeds.getTurnRecap(destUsr=self.players[self.turn], p1Bank=self.bank[0], p2Bank=self.bank[1],
-                            turnBank=self.bank[2], qty=self.turnsQty, pNum=self.turn, history=self.turnHistory)
+                                   turnBank=self.bank[2], qty=self.turnsQty, pNum=self.turn, history=self.turnHistory)
 
     async def startTurn(self):
         if abs(self.bank[0] - self.bank[1]) >= self.leadAmount and self.leadAmount > 0:
@@ -206,7 +216,8 @@ class FarkleGame():
         self.isHighStake = False
         if self.turnsQty % self.mltQntt == 0:
             self.multiplier = round(self.multiplier + self.mltQty, 3)
-            self.embedList += [embeds.getMultiplierIncrEmbed(multiplier=self.multiplier, turns=self.turnsQty, incr=self.mltQty)]
+            self.embedList += [
+                embeds.getMultiplierIncrEmbed(multiplier=self.multiplier, turns=self.turnsQty, incr=self.mltQty)]
             await self.channel.send(embed=self.embedList[-1])
             await asyncio.sleep(1)
         btns = View()
@@ -228,11 +239,13 @@ class FarkleGame():
             btns.add_item(btn2)
             btns.add_item(btn3)
             btns.add_item(btn4)
-        self.latestEmbed = embeds.getStartTurnEmbed(mlt=self.multiplier, lead=self.turn==self.lead, pNum=self.turn, stake=self.highStakesPass)
+        self.latestEmbed = embeds.getStartTurnEmbed(mlt=self.multiplier, lead=self.turn == self.lead, pNum=self.turn,
+                                                    stake=self.highStakesPass)
         self.latestMsg = await self.channel.send(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
         if self.isBot():
             await asyncio.sleep(1.5)
-            if self.highStakesPass != None and self.highStakesPass[0]*random.randint(1,3) >= 500 and random.randint(0, 7) <= len(self.highStakesPass[1]):
+            if self.highStakesPass != None and self.highStakesPass[0] * random.randint(1, 3) >= 500 and random.randint(
+                    0, 7) <= len(self.highStakesPass[1]):
                 print('high stakes', self.highStakesPass)
                 self.bank[2] = self.highStakesPass[0]
                 self.tableDice = self.highStakesPass[1]
@@ -278,7 +291,10 @@ class FarkleGame():
         btns.add_item(btn2)
         btns.add_item(btn3)
         btns.add_item(btn4)
-        self.latestEmbed = embeds.getHighStakesEmbed(mlt=self.multiplier, iconList=[dice[i] for i in self.tableDice], iconList2=[dice[i] for i in self.invDice], pts=self.highStakesPass[0], lead=self.turn==self.lead, pNum=self.turn)
+        self.latestEmbed = embeds.getHighStakesEmbed(mlt=self.multiplier, iconList=[dice[i] for i in self.tableDice],
+                                                     iconList2=[dice[i] for i in self.invDice],
+                                                     pts=self.highStakesPass[0], lead=self.turn == self.lead,
+                                                     pNum=self.turn)
         self.turnHistory += [('High stakes!', f'*{self.highStakesPass[0]} pts.*')]
         await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
         self.task = asyncio.create_task(self.cancelIdleUser())
@@ -295,7 +311,7 @@ class FarkleGame():
         self.task.cancel()
         self.embedList += self.getTurnRecap()
         await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
-        self.embedList += [embeds.getGiveUpEmbed(user=interaction.user, pNum= int(interaction.user == self.players[1]))]
+        self.embedList += [embeds.getGiveUpEmbed(user=interaction.user, pNum=int(interaction.user == self.players[1]))]
         await self.channel.send(embed=self.embedList[-1])
         await self.terminateGame(15)
 
@@ -306,7 +322,7 @@ class FarkleGame():
         self.task.cancel()
         await interaction.response.defer()
         self.bank[self.turn] += self.bank[2]
-        self.latestEmbed = embeds.getScoreBankedEmbed(turnBank=self.bank[2], pNum=interaction.user==self.players[1])
+        self.latestEmbed = embeds.getScoreBankedEmbed(turnBank=self.bank[2], pNum=interaction.user == self.players[1])
         self.turnHistory += [('Score banked:', str(self.bank[2]) + ' pts.')]
         await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
         self.embedList += self.getTurnRecap()
@@ -349,7 +365,7 @@ class FarkleGame():
         await self.channel.send(embed=self.embedList[-1])
         await self.terminateGame(15)
 
-    async def botRollDice(self): # bot action ========================================================
+    async def botRollDice(self):  # bot action ========================================================
         if self.turn == 0:
             return
         self.tableDice = [random.randint(0, 5) for _ in '.' * len(self.tableDice)]
@@ -361,9 +377,11 @@ class FarkleGame():
             btn3.callback = self.giveUp
             btns = View()
             btns.add_item(btn3)
-            self.bank[2] += result[1] # bot action ===================================================
-            self.latestEmbed = embeds.getHotDiceEmbed(iconList=[dice[i] for i in self.tableDice], pts=result[1], mlt=self.multiplier, lead=self.lead==1, pNum=1)
-            self.turnHistory += [('Rolled hot dice:', ' '.join([dice[i] for i in self.tableDice]) + f' *- {result[1]}*')]
+            self.bank[2] += result[1]  # bot action ===================================================
+            self.latestEmbed = embeds.getHotDiceEmbed(iconList=[dice[i] for i in self.tableDice], pts=result[1],
+                                                      mlt=self.multiplier, lead=self.lead == 1, pNum=1)
+            self.turnHistory += [
+                ('Rolled hot dice:', ' '.join([dice[i] for i in self.tableDice]) + f' *- {result[1]}*')]
             await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
             self.tableDice = [0] * 6
             self.invDice = []
@@ -373,7 +391,8 @@ class FarkleGame():
             if self.turn == 0:
                 return
             if self.isHighStake == False or len(self.turnHistory) > 2:
-                self.latestEmbed = embeds.getFarkledEmbed(turnBank=self.bank[2], pNum=1, iconList=[dice[i] for i in self.tableDice])
+                self.latestEmbed = embeds.getFarkledEmbed(turnBank=self.bank[2], pNum=1,
+                                                          iconList=[dice[i] for i in self.tableDice])
                 self.turnHistory += [('Rolled & farkled:', ' '.join([dice[i] for i in self.tableDice]))]
                 await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
                 if self.isHighStake == False:
@@ -382,10 +401,11 @@ class FarkleGame():
                     self.highStakesPass = None
             else:
                 self.latestEmbed = embeds.getFailedHighStakeEmbed(turnBank=self.bank[2], pNum=1,
-                                                          iconList=[dice[i] for i in self.tableDice], pts=self.highStakesPass[0])
+                                                                  iconList=[dice[i] for i in self.tableDice],
+                                                                  pts=self.highStakesPass[0])
                 self.turnHistory += [('High stakes failed:', ' '.join([dice[i] for i in self.tableDice]))]
                 await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
-                self.bank[1] = self.bank[1] - 500*self.multiplier if self.bank[1] > 500 else 0
+                self.bank[1] = self.bank[1] - 500 * self.multiplier if self.bank[1] > 500 else 0
                 self.highStakesPass = None
             self.embedList += self.getTurnRecap()
             await asyncio.sleep(2)
@@ -399,7 +419,9 @@ class FarkleGame():
         btn3.callback = self.giveUp
         btns = View()
         btns.add_item(btn3)
-        self.latestEmbed = embeds.getAfterRollEmbed(iconList=[dice[i] for i in self.tableDice], iconList2=[dice[i] for i in self.invDice], mlt=self.multiplier, lead=1==self.lead, pNum=1)
+        self.latestEmbed = embeds.getAfterRollEmbed(iconList=[dice[i] for i in self.tableDice],
+                                                    iconList2=[dice[i] for i in self.invDice], mlt=self.multiplier,
+                                                    lead=1 == self.lead, pNum=1)
         self.turnHistory += [('Rolled dice:', ' '.join([dice[i] for i in self.tableDice]))]
         await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
         await asyncio.sleep(1.5)
@@ -418,9 +440,9 @@ class FarkleGame():
         self.getMelds()
         btns.add_item(btn3)
         self.latestEmbed = embeds.getAfterMeldEmbed(iconList=[dice[i] for i in self.tableDice],
-                                                         iconList2=[dice[i] for i in self.invDice], meld=meld,
-                                                         mlt=self.multiplier,
-                                                         lead=1 == self.lead, pNum=1)
+                                                    iconList2=[dice[i] for i in self.invDice], meld=meld,
+                                                    mlt=self.multiplier,
+                                                    lead=1 == self.lead, pNum=1)
         self.turnHistory += [('Melded dice:', f'{meld[3]} × {meld[1]} *- {meld[2]}*')]
         await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
         await asyncio.sleep(1.5)
@@ -432,7 +454,7 @@ class FarkleGame():
         if self.melds != []:
             await self.botMeldItem(self.melds[0])
             return
-        if random.randint(0, 7) <= len(self.tableDice)+1:
+        if random.randint(0, 7) <= len(self.tableDice) + 1:
             if self.highStakesPass != 0 and random.randint(0, 2) == 0:
                 await self.botBankScore()
                 return
@@ -481,8 +503,10 @@ class FarkleGame():
             btns.add_item(btn3)
             btns.add_item(btn4)
             self.bank[2] += result[1]
-            self.latestEmbed = embeds.getHotDiceEmbed(iconList=[dice[i] for i in self.tableDice], pts=result[1], mlt=self.multiplier, lead=self.turn==self.lead, pNum=self.turn)
-            self.turnHistory += [('Rolled hot dice:', ' '.join([dice[i] for i in self.tableDice]) + f' *- {result[1]}*')]
+            self.latestEmbed = embeds.getHotDiceEmbed(iconList=[dice[i] for i in self.tableDice], pts=result[1],
+                                                      mlt=self.multiplier, lead=self.turn == self.lead, pNum=self.turn)
+            self.turnHistory += [
+                ('Rolled hot dice:', ' '.join([dice[i] for i in self.tableDice]) + f' *- {result[1]}*')]
             await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
             self.tableDice = [0] * 6
             self.invDice = []
@@ -490,7 +514,8 @@ class FarkleGame():
             return
         if self.melds == []:
             if self.isHighStake == False or len(self.turnHistory) != 1:
-                self.latestEmbed = embeds.getFarkledEmbed(turnBank=self.bank[2], pNum=self.turn, iconList=[dice[i] for i in self.tableDice])
+                self.latestEmbed = embeds.getFarkledEmbed(turnBank=self.bank[2], pNum=self.turn,
+                                                          iconList=[dice[i] for i in self.tableDice])
                 self.turnHistory += [('Rolled & farkled:', ' '.join([dice[i] for i in self.tableDice]))]
                 await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
                 if self.isHighStake == False:
@@ -499,8 +524,10 @@ class FarkleGame():
                     self.highStakesPass = None
             else:
                 self.latestEmbed = embeds.getFailedHighStakeEmbed(turnBank=self.bank[2], pNum=self.turn,
-                                                          iconList=[dice[i] for i in self.tableDice], pts=self.highStakesPass[0])
-                self.turnHistory += [('High stakes failed:', ' '.join([dice[i] for i in self.tableDice]) + f" (*{self.highStakesPass[0]} pts.* lost)")]
+                                                                  iconList=[dice[i] for i in self.tableDice],
+                                                                  pts=self.highStakesPass[0])
+                self.turnHistory += [('High stakes failed:', ' '.join(
+                    [dice[i] for i in self.tableDice]) + f" (*{self.highStakesPass[0]} pts.* lost)")]
                 await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
                 self.bank[self.turn] -= self.highStakesPass[0]
                 if self.bank[self.turn] < 0:
@@ -514,7 +541,7 @@ class FarkleGame():
             await self.startTurn()
             return
         btn1 = Button(label='Roll dice', emoji='🎲', style=discord.ButtonStyle.green, disabled=True)
-        btn2 = Button(label='Bank score', emoji='💰', style=discord.ButtonStyle.green, disabled=self.invDice==[])
+        btn2 = Button(label='Bank score', emoji='💰', style=discord.ButtonStyle.green, disabled=self.invDice == [])
         btn3 = Button(label='Give up', emoji='🏳', style=discord.ButtonStyle.red, disabled=False)
         btn4 = Button(label='Reset idle timer', emoji='🕓', style=discord.ButtonStyle.blurple, disabled=False)
         btn4.callback = self.extendIdleTimeout
@@ -522,13 +549,15 @@ class FarkleGame():
         btn3.callback = self.giveUp
         btns = View()
         for i in self.melds:
-            temp = MeldButton(game=self, meld=i, priority=i[2]==self.melds[0][2])
+            temp = MeldButton(game=self, meld=i, priority=i[2] == self.melds[0][2])
             btns.add_item(temp)
         btns.add_item(btn1)
         btns.add_item(btn2)
         btns.add_item(btn3)
         btns.add_item(btn4)
-        self.latestEmbed = embeds.getAfterRollEmbed(iconList=[dice[i] for i in self.tableDice], iconList2=[dice[i] for i in self.invDice], mlt=self.multiplier, lead=self.turn==self.lead, pNum=self.turn)
+        self.latestEmbed = embeds.getAfterRollEmbed(iconList=[dice[i] for i in self.tableDice],
+                                                    iconList2=[dice[i] for i in self.invDice], mlt=self.multiplier,
+                                                    lead=self.turn == self.lead, pNum=self.turn)
         self.turnHistory += [('Rolled dice:', ' '.join([dice[i] for i in self.tableDice]))]
         await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
         self.task = asyncio.create_task(self.cancelIdleUser())
@@ -538,51 +567,52 @@ class FarkleGame():
         amount = len(self.tableDice)
         sorted_nums = self.tableDice.copy()
         sorted_nums.sort()
-        perfectTable = sorted_nums.copy() # tests the possibility of hot dice by removing meldable dice
-        perfectScore = 0 # score in case of hot dice
-        self.melds = [] # die id, amount, pts, emoji
+        perfectTable = sorted_nums.copy()  # tests the possibility of hot dice by removing meldable dice
+        perfectScore = 0  # score in case of hot dice
+        self.melds = []  # die id, amount, pts, emoji
         for i in range(6):
             if self.tableDice.count(i) == 6:
-                return (True, int(3000*multiplier))
+                return (True, int(3000 * multiplier))
         if sorted_nums == list(range(6)):
-            return (True, int(2500*multiplier))
+            return (True, int(2500 * multiplier))
         for i in range(6):
             if self.tableDice.count(i) >= 5:
-                self.melds += [(i, 5, int(2000*multiplier), dice[i])]
+                self.melds += [(i, 5, int(2000 * multiplier), dice[i])]
                 if i in perfectTable:
                     while i in perfectTable:
                         perfectTable.remove(i)
-                    perfectScore += int(2000*multiplier)
-        if amount == 6 and sorted_nums[0] == sorted_nums[1] and sorted_nums[2] == sorted_nums[3] and sorted_nums[4] == sorted_nums[5]:
-            return (True, int(1500*multiplier))
+                    perfectScore += int(2000 * multiplier)
+        if amount == 6 and sorted_nums[0] == sorted_nums[1] and sorted_nums[2] == sorted_nums[3] and sorted_nums[4] == \
+                sorted_nums[5]:
+            return (True, int(1500 * multiplier))
         if self.tableDice.count(0) >= 3:
-            self.melds += [(0, 3, int(1000*multiplier), dice[0])]
+            self.melds += [(0, 3, int(1000 * multiplier), dice[0])]
             if 0 in perfectTable:
                 while 0 in perfectTable:
                     perfectTable.remove(0)
-                perfectScore += int(1100*multiplier) if self.tableDice.count(0) == 4 else int(1000*multiplier)
+                perfectScore += int(1100 * multiplier) if self.tableDice.count(0) == 4 else int(1000 * multiplier)
         for i in range(6):
             if self.tableDice.count(i) >= 4:
-                self.melds += [(i, 4, int(1000*multiplier), dice[i])]
+                self.melds += [(i, 4, int(1000 * multiplier), dice[i])]
                 if i in perfectTable:
                     while i in perfectTable:
                         perfectTable.remove(i)
-                    perfectScore += int(1000*multiplier)
+                    perfectScore += int(1000 * multiplier)
         for i in range(1, 6):
             if self.tableDice.count(i) >= 3:
-                self.melds += [(i, 3, int((i+1)*100*multiplier), dice[i])]
+                self.melds += [(i, 3, int((i + 1) * 100 * multiplier), dice[i])]
                 if i in perfectTable:
                     while i in perfectTable:
                         perfectTable.remove(i)
-                    perfectScore += int((i+1)*100*multiplier)
+                    perfectScore += int((i + 1) * 100 * multiplier)
         if 0 in self.tableDice:
-            self.melds += [(0, 1, int(100*multiplier), dice[0])]
-            perfectScore += perfectTable.count(0) * int(100*multiplier)
+            self.melds += [(0, 1, int(100 * multiplier), dice[0])]
+            perfectScore += perfectTable.count(0) * int(100 * multiplier)
             while 0 in perfectTable:
                 perfectTable.remove(0)
         if 4 in self.tableDice:
-            self.melds += [(4, 1, int(50*multiplier), dice[4])]
-            perfectScore += perfectTable.count(4) * int(50*multiplier)
+            self.melds += [(4, 1, int(50 * multiplier), dice[4])]
+            perfectScore += perfectTable.count(4) * int(50 * multiplier)
             while 4 in perfectTable:
                 perfectTable.remove(4)
 
@@ -593,10 +623,10 @@ class FarkleGame():
             return (False, 0)
 
 
-
 class MeldButton(Button):
     def __init__(self, game: FarkleGame, meld, priority: bool):
-        super().__init__(label=f'× {meld[1]} - {meld[2]}pts.', emoji=meld[3], style=discord.ButtonStyle.blurple if priority else discord.ButtonStyle.grey)
+        super().__init__(label=f'× {meld[1]} - {meld[2]}pts.', emoji=meld[3],
+                         style=discord.ButtonStyle.blurple if priority else discord.ButtonStyle.grey)
         self.game = game
         self.meld = meld
 
@@ -628,26 +658,30 @@ class MeldButton(Button):
         btns.add_item(btn2)
         btns.add_item(btn3)
         btns.add_item(btn4)
-        self.game.latestEmbed = embeds.getAfterMeldEmbed(iconList=[dice[i] for i in self.game.tableDice], iconList2=[dice[i] for i in self.game.invDice], meld=self.meld, mlt=self.game.multiplier, lead=self.game.turn==self.game.lead, pNum=self.game.turn)
+        self.game.latestEmbed = embeds.getAfterMeldEmbed(iconList=[dice[i] for i in self.game.tableDice],
+                                                         iconList2=[dice[i] for i in self.game.invDice], meld=self.meld,
+                                                         mlt=self.game.multiplier,
+                                                         lead=self.game.turn == self.game.lead, pNum=self.game.turn)
         self.game.turnHistory += [('Melded dice:', f'{self.meld[3]} × {self.meld[1]} *- {self.meld[2]}*')]
         await self.game.latestMsg.edit(embeds=self.game.getTurnRecap() + [self.game.latestEmbed], view=btns)
         self.game.task = asyncio.create_task(self.game.cancelIdleUser())
 
+
 #
-#=== === === === === === === === === === === === === === === === === === ===
+# === === === === === === === === === === === === === === === === === === ===
 #
 # EVENTS
 #
-#=== === === === === === === === === === === === === === === === === === ===
+# === === === === === === === === === === === === === === === === === === ===
 #
-#=== === === === === === === === === === === === === === === === === === ===
+# === === === === === === === === === === === === === === === === === === ===
 #
-#=== === === === === === === === === === === === === === === === === === ===
+# === === === === === === === === === === === === === === === === === === ===
 #
 
 @bot.event
 async def on_ready():
-    global farkleCentral, regularRole,adminRole, gamesCategory, replaysCategory, totalGames, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel
+    global farkleCentral, regularRole, adminRole, gamesCategory, replaysCategory, totalGames, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel
     print(f'Logged on as {bot.user}!')
     farkleCentral = discord.utils.get(bot.guilds, id=idList.farkleCentralId)
     regularRole = discord.Guild.get_role(farkleCentral, idList.regularRole)
@@ -701,11 +735,13 @@ async def on_message(message: discord.Message):
         elif message.content == '$stopbot':
             await message.channel.send('stopping...')
             print('stopping bot as requested by', message.author.name)
-            await bot.close()
+            try: await bot.close()
+            except: pass
 
     for i in currentGames:
         if i.channel == message.channel:
-            i.embedList += [embeds.getUsrReplayMsgEmbed(message=message.content, user=message.author, pNum=message.author==i.players[0])]
+            i.embedList += [embeds.getUsrReplayMsgEmbed(message=message.content, user=message.author,
+                                                        pNum=message.author == i.players[0])]
 
     if message.channel.id == idList.newGameChannel:
         await message.delete()
@@ -716,9 +752,11 @@ async def on_message(message: discord.Message):
             await message.delete()
             return
 
+
 @bot.event
 async def on_member_join(member):
     await member.add_roles(regularRole)
+
 
 @bot.event
 async def on_raw_reaction_add(payload):
@@ -754,13 +792,16 @@ async def on_raw_reaction_add(payload):
         print('player joined queue:', payload.member.name)
         for i in currentGames:
             if payload.member in i.players:
-                print('but was removed due to being in-game:', payload.member.name, 'in', i.players[0], 'vs', i.players[1])
+                print('but was removed due to being in-game:', payload.member.name, 'in', i.players[0], 'vs',
+                      i.players[1])
                 await message.remove_reaction(emoji='🇶', member=payload.member)
                 return
         await payload.member.send(embed=embeds.getQueueJoinEmbed())
         queue += [QueuedPerson(user=payload.member)]
         if len(queue) >= 2:
-            await createUserGame(p1=queue[0].user, p2=queue[1].user, embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user), leadAmount=1500, startMultiplier=1.0, multiplierQuality=0.2, multiplierQuantity=5, goal=10000)
+            await createUserGame(p1=queue[0].user, p2=queue[1].user,
+                                 embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user), leadAmount=1500,
+                                 startMultiplier=1.0, multiplierQuality=0.2, multiplierQuantity=5, goal=10000)
             await message.remove_reaction(emoji='🇶', member=queue[0].user)
             await message.remove_reaction(emoji='🇶', member=queue[1].user)
             print('Queue full, starting game:')
@@ -771,6 +812,7 @@ async def on_raw_reaction_add(payload):
             temp = await channel.send(qPingRole.mention)
             await temp.delete()
         await qDisplayChannel.edit(name=f'Queued members: {len(queue)}')
+
 
 @bot.event
 async def on_raw_reaction_remove(payload):
@@ -793,18 +835,22 @@ async def on_raw_reaction_remove(payload):
                 queue = [j for j in queue if j != i]
                 break
         else:
-            return # in case a player got kicked (was already removed in QueuedUser.kickQueuedMember())
+            return  # in case a player got kicked (was already removed in QueuedUser.kickQueuedMember())
         await member.send(embed=embeds.getQueueLeaveEmbed())
         await qDisplayChannel.edit(name=f'Queued members: {len(queue)}')
 
+
 @bot.slash_command(name='invite', guild_ids=[idList.farkleCentralId], description='Invite your friend to a farkle game')
 async def invite(ctx,
-                 user:discord.Option(discord.User, 'The user you want to invite', required=True),
-                goal:discord.Option(int, 'The amount of points needed to win the game', default=10000),
-                lead_amount:discord.Option(int, 'The amount of point lead needed to disable the multiplier (set to 0 to disable)', default=1500),
-                multiplier_start:discord.Option(float, 'The multiplier value on start', default=1.0),
-                multiplier_quality:discord.Option(float, 'By how much the multiplier should increase', default=0.2),
-                multiplier_quantity:discord.Option(int, 'How often the multiplier should increase (in turns)', default=5)
+                 user: discord.Option(discord.User, 'The user you want to invite', required=True),
+                 goal: discord.Option(int, 'The amount of points needed to win the game', default=10000),
+                 lead_amount: discord.Option(int,
+                                             'The amount of point lead needed to disable the multiplier (set to 0 to disable)',
+                                             default=1500),
+                 multiplier_start: discord.Option(float, 'The multiplier value on start', default=1.0),
+                 multiplier_quality: discord.Option(float, 'By how much the multiplier should increase', default=0.2),
+                 multiplier_quantity: discord.Option(int, 'How often the multiplier should increase (in turns)',
+                                                     default=5)
                  ):
     if goal <= 0:
         goal = 10000
@@ -820,7 +866,8 @@ async def invite(ctx,
         return
     if user == bot.user:
         await ctx.respond(embed=embeds.getAiGameStartingEmbed(), ephemeral=True)
-        await createAiGame(player= ctx.author, startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity, multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
+        await createAiGame(player=ctx.author, startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity,
+                           multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
         return
     for i in currentGames:
         if ctx.author in i.players and i.state != 2:
@@ -836,10 +883,16 @@ async def invite(ctx,
         await ctx.respond(embed=embeds.getHasDisabledInvitesEmbed(user), ephemeral=True)
         return
     await ctx.respond(embed=embeds.getChallengeCreationEmbed(user), ephemeral=True)
-    await createUserGame(ctx.author, user, embeds.getInviteEmbed(ctx.author, user), startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity, multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
+    await createUserGame(ctx.author, user, embeds.getInviteEmbed(ctx.author, user), startMultiplier=multiplier_start,
+                         multiplierQuantity=multiplier_quantity, multiplierQuality=multiplier_quality,
+                         leadAmount=lead_amount, goal=goal)
+
 
 @bot.slash_command(name='share', guild_ids=[idList.farkleCentralId], description='Share you replay with a friend')
-async def invite(ctx, user:discord.Option(discord.User, 'The user you want to start/stop sharing the replay', required=True), status:discord.Option(bool, 'True if you want to add the user, False if you want to remove the user', required=True)):
+async def invite(ctx, user: discord.Option(discord.User, 'The user you want to start/stop sharing the replay',
+                                           required=True),
+                 status: discord.Option(bool, 'True if you want to add the user, False if you want to remove the user',
+                                        required=True)):
     for i in replays:
         if i.channel == ctx.channel:
             if status:
@@ -851,20 +904,30 @@ async def invite(ctx, user:discord.Option(discord.User, 'The user you want to st
             return
     await ctx.respond(embed=embeds.getNotInReplayChannelEmbed(), ephemeral=True)
 
-async def createAiGame(player, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float, leadAmount: int, goal: int):
+
+async def createAiGame(player, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float,
+                       leadAmount: int, goal: int):
     global totalGames, currentGames
-    channel = await farkleCentral.create_text_channel(name=f'game-{totalGames}',category=gamesCategory)
+    channel = await farkleCentral.create_text_channel(name=f'game-{totalGames}', category=gamesCategory)
     await channel.set_permissions(farkleCentral.default_role, read_messages=False, send_messages=False)
     await channel.set_permissions(regularRole, read_messages=False, send_messages=False)
     await channel.set_permissions(player, read_messages=True, send_messages=False)
-    temp = FarkleGame(id=totalGames, state=1, players=(player, bot.user), channel=channel, latestMsg= await channel.send(embed=embeds.getAiGameReadyEmbed(player=player, goal=goal, ptLead=leadAmount, mltQtt=multiplierQuantity, mltQty=multiplierQuality)), startMultiplier=startMultiplier, multiplierQuantity=multiplierQuantity, multiplierQuality=multiplierQuality, leadAmount=leadAmount, goal=goal)
+    temp = FarkleGame(id=totalGames, state=1, players=(player, bot.user), channel=channel, latestMsg=await channel.send(
+        embed=embeds.getAiGameReadyEmbed(player=player, goal=goal, ptLead=leadAmount, mltQtt=multiplierQuantity,
+                                         mltQty=multiplierQuality)), startMultiplier=startMultiplier,
+                      multiplierQuantity=multiplierQuantity, multiplierQuality=multiplierQuality, leadAmount=leadAmount,
+                      goal=goal)
     currentGames += [temp]
-    temp.embedList += [embeds.getAiGameReadyEmbed(player=player, goal=goal, ptLead=leadAmount, mltQtt=multiplierQuantity, mltQty=multiplierQuality)]
+    temp.embedList += [
+        embeds.getAiGameReadyEmbed(player=player, goal=goal, ptLead=leadAmount, mltQtt=multiplierQuantity,
+                                   mltQty=multiplierQuality)]
     totalGames += 1
     await totalGamesMsg.edit(f'{totalGames}')
     await temp.startTurn()
 
-async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embed, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float, leadAmount: int, goal: int):
+
+async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embed, startMultiplier: float,
+                         multiplierQuantity: int, multiplierQuality: float, leadAmount: int, goal: int):
     global totalGames, currentGames
     channel = await farkleCentral.create_text_channel(name=f'game-{totalGames}',
                                                       category=gamesCategory)
@@ -874,11 +937,14 @@ async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embe
     await channel.set_permissions(p2, read_messages=True, send_messages=False)
     msg = await channel.send(embed=embed)
     await msg.add_reaction('✅')
-    temp = FarkleGame(id=totalGames, state=0, players=(p1, p2), channel=channel, latestMsg=msg, startMultiplier=startMultiplier, multiplierQuantity=multiplierQuantity, multiplierQuality=multiplierQuality, leadAmount=leadAmount, goal=goal)
+    temp = FarkleGame(id=totalGames, state=0, players=(p1, p2), channel=channel, latestMsg=msg,
+                      startMultiplier=startMultiplier, multiplierQuantity=multiplierQuantity,
+                      multiplierQuality=multiplierQuality, leadAmount=leadAmount, goal=goal)
     currentGames += [temp]
     totalGames += 1
     await totalGamesMsg.edit(f'{totalGames}')
     temp.task = asyncio.create_task(cancelUnreadyGame(temp, msg, channel, p1, p2))
+
 
 async def cancelUnreadyGame(temp, msg, channel, p1, p2):
     try:
@@ -889,9 +955,13 @@ async def cancelUnreadyGame(temp, msg, channel, p1, p2):
     await channel.send(embed=embeds.getReadyTimeoutEmbed(p1, p2))
     await temp.terminateGame(15)
 
+
 f = open('token.txt', 'r')
 token = f.read()
 f.close()
-bot.run(token)
 
-print('bot stopped!')
+while 1:
+    bot.run(token)
+    print('The bot is stopped. Type "q" if you want to quit, anything else if you want to launch the bot.')
+    if input() == 'q': break
+print('You\'ve quit, end of program.')
