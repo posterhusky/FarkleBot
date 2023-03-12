@@ -22,7 +22,7 @@
 
 # Farkle bot
 
-Welcome to the Farkle Discord Bot! This bot is designed to replicate the popular board game Farkle, where players roll dice to score points and try to reach a winning score before their opponents.
+Welcome to the Farkle Discord Bot! This bot is designed to replicate the popular board game Farkle, where players roll dice to score points and try to reach a winning score before their opponents. The bot is supposed to be used in the [official discord server](https://discord.gg/Q3JWsayfSp).
 
 
 ## How to play farkle
@@ -34,12 +34,19 @@ Welcome to the Farkle Discord Bot! This bot is designed to replicate the popular
 
 - If the player rolls a combination of dice that does not score any points, this is called a Farkle and the player loses all points accumulated in that turn.
 
-- The game ends when one player reaches a predetermined winning score, typically 10,000 points.
+- The game ends when one player reaches a predetermined winning score, typically 10 000 points.
+
+More detailed rules can be seen in the [official discord server](https://discord.gg/Q3JWsayfSp).
 
 ## How to self-host the bot
 We should warn you that this version of the bot isn't meant to be used on other servers. To operate the bot your server must have specific channels and messages. We are currently working on a "light" version that can be used by everyone.
-- First, you should create the required roles and channels
+
+- First you should make sure you have the following dependencies: `discord.py`, `pycord`, `asyncio`, `random`, `time`
+
+- Then, you should create the required roles and channels
+
 - After this you have to update the ID of the admin role and get the required messages and their IDs via the $ commands
+
 - Finally, you have to replace all the IDs in the "idList.py". You can also replace the images in "images.py".
 
 ## Authors
