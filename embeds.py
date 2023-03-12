@@ -118,6 +118,64 @@ def getNewGameEmbeds(self):
         url=images.getImage(2))
     return embed1, embed2, embed3
 
+def getEventChannelEmbeds(event: int, time: int):
+    match event:
+        case 0: # score attack
+            embed1 = discord.Embed(title='**SCORE ATTACK MODE**', colour=discord.Colour.green(),
+                                   description='It plays like a normal farkle game except a few twists:')
+            embed1.add_field(name='**Score attack:**', value=f'*500 pts.* are removed every turn.', inline=False)
+            embed1.add_field(name='**Win condition:**', value=f'The player that finishes a turn with a negative bank looses.', inline=False)
+            embed1.add_field(name='**Score cap:**', value=f'You can only have *5000 pts.* in your bank.', inline=False)
+            embed1.add_field(name='**Also, there\'s no multipliers or high stakes in this mode.**', value=f'', inline=False)
+        case 1:  # snowball
+            embed1 = discord.Embed(title='**SNOWBALL MODE**', colour=discord.Colour.blue(),
+                                   description='It plays like a normal farkle game except a few twists:')
+            embed1.add_field(name='**Common bank:**', value=f'Bot players have a common bank.', inline=False)
+            embed1.add_field(name='**Win condition:**',
+                             value=f'To win, the bank should be at EXACTLY *5K pts.* The turn score is undone if the bank exceeds the limits', inline=False)
+            embed1.add_field(name='**Also, there\'s no multipliers or high stakes in this mode.**', value=f'', inline=False)
+        case 2:  # hot potato
+            embed1 = discord.Embed(title='**HOT POTATO MODE**', colour=discord.Colour.orange(),
+                                   description='It plays like a normal farkle game except a few twists:')
+            embed1.add_field(name='**1 meld only:**', value=f'After rolling the dice, you can only pick 1 meld which goes directly to your bank.', inline=False)
+            embed1.add_field(name='**Farkle:**', value=f'If you farkle, you loose *500 pts.*', inline=False)
+            embed1.add_field(name='**Pass turn:**', value=f'You have the option to pass the turn to the other player for *250 pts.*', inline=False)
+            embed1.add_field(name='**Win condition:**', value=f'The player that finishes a turn with a negative bank looses.', inline=False)
+            embed1.add_field(name='**Also, there\'s no multipliers or high stakes in this mode.**', value=f'', inline=False)
+        case 3:  # tug of war
+            embed1 = discord.Embed(title='**TUG OF WAR MODE**', colour=discord.Colour.red(),
+                                   description='It plays like a normal farkle game except a few twists:')
+            embed1.add_field(name='**Point stealing:**', value=f'All the points you earn are stolen from the opponent\'s bank.', inline=False)
+            embed1.add_field(name='**Win condition:**', value=f'The player with a negative bank upon a turn finish looses.', inline=False)
+            embed1.add_field(name='**Also, there\'s no high stakes in this mode.**', value=f'', inline=False)
+        case 4:  # mystery die
+            embed1 = discord.Embed(title='**MYSTERY DIE MODE**', colour=discord.Colour.magenta(),
+                                   description='It plays like a normal farkle game except a few twists:')
+            embed1.add_field(name='**Mystery die:**', value=f'At the start of a turn the opponent has an option to roll the mystery die. If rolled, it give the turn a random modifier that is only shown to the opponent.', inline=False)
+            embed1.add_field(name='**Mystery die values:**', value='**⬇ Heavy pockets:** *100pts.* removed form bank for every die in the inventory\n'
+                                                                   '**⬇ Double trouble:** The banked score is added to the opponent\'s bank as well\n'
+                                                                   '**⬇ Rounding error:** Banked score is rounded down to the nearest *500* multiple\n'
+                                                                   '**⬆ Farkle shield:** *50%* of the turn score is banked upon a farkle.\n'
+                                                                   '**⬆ Banking bonus:** *10%* of the bank are added on top of the banked score\n'
+                                                                   '**⬆ Point transfer:** *50%* of the banked score is taken from the opponent\'s bank', inline=False)
+            embed1.add_field(name='**Also, there\'s no high stakes in this mode.**', value=f'', inline=False)
+        case _:  # bounty
+            embed1 = discord.Embed(title='**BOUNTY MODE**', colour=discord.Colour.yellow(),
+                                   description='It plays like a normal farkle game except a few twists:')
+            embed1.add_field(name='**No melds:**', value=f'There aren\'t any specific melds in this mode: you can only meld 1 die at a time for *0 pts.* The only way to get points is to roll bounties.', inline=False)
+            embed1.add_field(name='**Bounty:**', value=f'There are 3 bounties for different poins. Bounties change after you collect them to keep the game fresh.', inline=False)
+            embed1.add_field(name='**Win condition:**', value=f'You have to get *5000 pts.* in your bank to win.', inline=False)
+            embed1.add_field(name='**Also, there\'s no multipliers or high stakes in this mode.**', value=f'',
+                             inline=False)
+    embed1.add_field(name=f'Mode refreshes <t:{time}:R>.', value='These modes are on a daily rotation, please note that said time is approximate and allows a 10 minute delay.', inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(0))
+    embed2 = discord.Embed(title='**Event queue**', colour=discord.Colour.blue(),
+                           description='React with 🇶 to join the event queue. You will be pinged as soon as there will be enough players. Also, be aware of queue kick time.')
+    embed2.set_thumbnail(
+        url=images.getImage(2))
+    return embed1, embed2
+
 def getBlockInvitesEmbed():
     embed1 = discord.Embed(title=f'**Disable invites**', colour=discord.Colour.blue(),
                            description=f'Prevents all players from inviting you.\n\nAdd a reaction to enable this option.')
@@ -260,7 +318,7 @@ def getQueueGameEmbed(p1, p2, time):
 
 def getStartNormalEmbed(turn, p1, p2, goal, ptLead, mltQty, mltQual):
     embed1 = discord.Embed(title=f'**NORMAL MODE**', colour=discord.Colour.green(),
-                           description=f'The game started in normal mode. Roll dice, meld items, get points! First player to get *{goal} pts.* wins!\n\nP1: {p1.mention}\nP2: {p2.mention}')
+                           description=f'The game started in normal mode. Roll dice, meld them, get points! First player to get *{goal} pts.* wins!\n\nP1: {p1.mention}\nP2: {p2.mention}')
     embed1.add_field(name='**Win condition:**', value=f'{goal} pts.', inline=True)
     embed1.add_field(name='**Lead from:**', value=f'{ptLead} pts.', inline=True)
     embed1.add_field(name='**Multiplier:**', value=f'+{mltQual}x every {mltQty} turns.', inline=True)
@@ -271,7 +329,7 @@ def getStartNormalEmbed(turn, p1, p2, goal, ptLead, mltQty, mltQual):
 
 def getStartScoreAttackEmbed(turn, p1, p2):
     embed1 = discord.Embed(title=f'**SCORE ATTACK MODE**', colour=discord.Colour.green(),
-                           description=f'The game started in score attack mode. Roll dice, meld items, get points! *500 pts.* removed every turn. First player with negative bank looses!\n\nP1: {p1.mention}\nP2: {p2.mention}')
+                           description=f'The game started in score attack mode. Roll dice, meld them, get points! *500 pts.* removed every turn. First player with negative bank looses!\n\nP1: {p1.mention}\nP2: {p2.mention}')
     embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
     embed1.set_thumbnail(
         url=images.getImage(1))
@@ -279,7 +337,7 @@ def getStartScoreAttackEmbed(turn, p1, p2):
 
 def getStartSnowballEmbed(turn, p1, p2, cap):
     embed1 = discord.Embed(title=f'**SNOWBALL MODE**', colour=discord.Colour.green(),
-                           description=f'The game started in snowball mode. Roll dice, meld items, get points, but there\'s only 1 bank! The first player to get the bank to exactly *{cap} pts.* wins.\n\nP1: {p1.mention}\nP2: {p2.mention}')
+                           description=f'The game started in snowball mode. Roll dice, meld them, get points, but there\'s only 1 bank! The first player to get the bank to exactly *{cap} pts.* wins.\n\nP1: {p1.mention}\nP2: {p2.mention}')
     embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
     embed1.set_thumbnail(
         url=images.getImage(1))
@@ -295,14 +353,22 @@ def getStartHotPotatoEmbed(turn, p1, p2):
 
 def getStartTugOfWarEmbed(turn, p1, p2):
     embed1 = discord.Embed(title=f'**TUG OF WAR MODE**', colour=discord.Colour.green(),
-                           description=f'The game started in tug of war mode. Roll dice, meld items, get points, but all the points you earn are stolen!\n\nP1: {p1.mention}\nP2: {p2.mention}')
+                           description=f'The game started in tug of war mode. Roll dice, meld them, get points, but all the points you earn are stolen!\n\nP1: {p1.mention}\nP2: {p2.mention}')
     embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
     embed1.set_thumbnail(url=images.getImage(1))
     return embed1
 
 def getStartMysteryDieEmbed(turn, p1, p2):
     embed1 = discord.Embed(title=f'**MYSTERY DIE MODE**', colour=discord.Colour.green(),
-                           description=f'The game started in mystery die mode. Roll dice, meld items, get points, but all the start of your turn the opponent has an option to roll the mystery die!\n\nP1: {p1.mention}\nP2: {p2.mention}')
+                           description=f'The game started in mystery die mode. Roll dice, meld them, get points, but all the start of your turn the opponent has an option to roll the mystery die!\n\nP1: {p1.mention}\nP2: {p2.mention}')
+    embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(1))
+    return embed1
+
+def getStartBountyEmbed(turn, p1, p2):
+    embed1 = discord.Embed(title=f'**BOUNTY MODE**', colour=discord.Colour.green(),
+                           description=f'The game started in bounty mode. Roll dice, meld them, but you only get points for "bounty melds" that are displayed in the turn recap!\n\nP1: {p1.mention}\nP2: {p2.mention}')
     embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
     embed1.set_thumbnail(
         url=images.getImage(1))
@@ -378,6 +444,27 @@ def getMysteryDieTurnRecap(destUsr, p1Bank, p2Bank, turnBank, qty, pNum, history
     embed1.add_field(name='**P1\'s bank:**', value=p1Bank, inline=True)
     embed1.add_field(name='**P2\'s bank:**', value=p2Bank, inline=True)
     embed1.add_field(name='**Turn score:**', value=turnBank, inline=True)
+    embed1.set_thumbnail(
+        url=images.getImage(not pNum))
+    turnEmbeds = [discord.Embed(title='**Turn history**', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='All your actions during the turn are displayed here!')]
+    if history == []:
+        turnEmbeds[0].add_field(name='Nothing here yet...', value='', inline=False)
+    else:
+        while (len(history)-1)//24 + 1 != len(turnEmbeds):
+            turnEmbeds += [discord.Embed(title='', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='')]
+        for n, i in enumerate(history):
+            turnEmbeds[n//24].add_field(name=f'{n+1}. {i[0]}', value=i[1], inline=True)
+    turnEmbeds[0].set_thumbnail(url=images.getImage(2))
+    return [embed1] + turnEmbeds
+
+def getBountyTurnRecap(destUsr, p1Bank, p2Bank, qty, pNum, history, bounties):
+    embed1 = discord.Embed(title=f'**{qty}. P{pNum + 1}\'s turn!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
+                           description=f'It\'s {destUsr.mention}\'s turn! Check the message below to see what you can do!')
+    embed1.add_field(name='***3000 pts.*:**', value=f'{bounties[0][3]} × {bounties[0][1]}', inline=True)
+    embed1.add_field(name='***1500 pts.*:**', value=f'{bounties[1][3]} × {bounties[1][1]}', inline=True)
+    embed1.add_field(name='***500 pts.*:**', value=f'{bounties[2][3]} × {bounties[2][1]}', inline=True)
+    embed1.add_field(name='**P1\'s bank:**', value=p1Bank, inline=True)
+    embed1.add_field(name='**P2\'s bank:**', value=p2Bank, inline=True)
     embed1.set_thumbnail(
         url=images.getImage(not pNum))
     turnEmbeds = [discord.Embed(title='**Turn history**', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='All your actions during the turn are displayed here!')]
@@ -574,6 +661,19 @@ def getAfterMeldEmbed(iconList, iconList2, meld, mlt, lead, pNum, time):
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
+
+
+def getAfterBountyMeldEmbed(iconList, iconList2, meld, pNum, time):
+    embed1 = discord.Embed(title=f'**Bounty melded!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You melded **{meld[3]} × {meld[1]}** which was a bounty and therefore got *{meld[2]} pts.* You can now select another meld, roll the dice or bank your score!')
+    embed1.add_field(name=f'Remaining dice:', value=' '.join(iconList), inline=True)
+    embed1.add_field(name=f'Inventory:', value=' '.join(iconList2), inline=True)
+    if time != None:
+        embed1.add_field(name=f'The game will be terminated if you won\'t react <t:{time}:R>!', value='',
+                         inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
 
 def getNormalWinEmbed(winner, turns, pNum, time):
     embed1 = discord.Embed(title=f'**P{pNum+1} WON THE GAME!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),

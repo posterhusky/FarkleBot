@@ -2,7 +2,7 @@ import discord, embeds, asyncio, emojis, random, time
 
 import replayFunctions
 from replayFunctions import Replay
-from meldButtons import MeldButton, HotPotatoMeldButton
+from meldButtons import MeldButton, HotPotatoMeldButton, BountyMeldButton
 from discord.ui import View, Button
 
 dice = [emojis.die1, emojis.die2, emojis.die3, emojis.die4, emojis.die5, emojis.die6]
@@ -613,6 +613,7 @@ class ScoreAttackGame(NormalGame):
         self.invDice = []
         self.turnsQty += 1
         self.bank[self.turn] -= 250 if self.turnsQty==1 else 500
+        self.isHighStake = False
         btns = View()
         btn3 = Button(label='Give up', emoji='🏳', style=discord.ButtonStyle.red, disabled=False)
         btn3.callback = self.giveUp
@@ -1406,3 +1407,185 @@ class MysteryDieGame(NormalGame):
         self.embedList += [embeds.getInteractionTimeoutEmbed(user=user, time=int(time.time())+15)]
         await self.channel.send(embed=self.embedList[-1])
         await self.terminateGame(15)
+
+class BountyGame(NormalGame):
+    async def startGame(self):
+        self.embedList = [
+            embeds.getStartBountyEmbed(self.turn, p1=self.players[0], p2=self.players[1])]
+        self.latestMsg = await self.channel.send(embed=self.embedList[0])
+        rn = [random.randint(0, 5) for _ in '.'*3]
+        self.bounties = [
+            (rn[0], 4, 3000, dice[rn[0]]),
+            (rn[1], 3, 1500, dice[rn[1]]),
+            (rn[2], 2, 500, dice[rn[2]])
+        ]
+        self.goal = 5000
+        await self.startTurn()
+    
+    def getTurnRecap(self) -> list:
+        return embeds.getBountyTurnRecap(destUsr=self.players[self.turn], p1Bank=self.bank[0], p2Bank=self.bank[1],
+                                         qty=self.turnsQty, pNum=self.turn, history=self.turnHistory, bounties=self.bounties)
+    
+    
+    async def startTurn(self):
+        if self.state == 2:
+            return
+        self.turnHistory = []
+        self.tableDice = [0] * 6
+        self.invDice = []
+        self.turnsQty += 1
+        self.highStakesPass = None
+        self.isHighStake = False
+        btns = View()
+        btn3 = Button(label='Give up', emoji='🏳', style=discord.ButtonStyle.red, disabled=False)
+        btn3.callback = self.giveUp
+        if self.isBot():
+            btns.add_item(btn3)
+        else:
+            btn1 = Button(label='Roll dice', emoji='🎲', style=discord.ButtonStyle.green, disabled=False)
+            btn4 = Button(label='Reset idle timer', emoji='🕓', style=discord.ButtonStyle.blurple, disabled=False)
+            btn4.callback = self.extendIdleTimeout
+            btn1.callback = self.rollDice
+            btns.add_item(btn1)
+            btns.add_item(btn3)
+            btns.add_item(btn4)
+        self.latestEmbed = embeds.getNormalStartTurnEmbed(mlt=self.multiplier, lead=self.turn == self.lead, pNum=self.turn,
+                                                    stake=self.highStakesPass, time=int(time.time())+60)
+        self.latestMsg = await self.channel.send(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
+        if self.isBot():
+            await asyncio.sleep(1.5)
+            await self.botRollDice()
+        else:
+            temp = await self.channel.send(f'{self.players[self.turn].mention}')
+            await temp.delete()
+            self.task = asyncio.create_task(self.cancelIdleUser())
+
+    async def rollDice(self, interaction: discord.Interaction):
+        if interaction.user != self.players[self.turn]:
+            await interaction.response.send_message(embed=embeds.getNotYourTurnEmbed(), ephemeral=True)
+            return
+        self.task.cancel()
+        await interaction.response.defer()
+        self.tableDice = [random.randint(0, 5) for _ in '.' * len(self.tableDice)]
+        if not random.randint(0, 5) and len(self.tableDice) >= 2:
+            self.tableDice[-2:] = [self.bounties[2][0]]*2
+        self.getMelds()
+        if len(self.tableDice) <= 2 and len(self.melds) <= 1:
+            await self.farkleActions()
+            return
+        btn1 = Button(label='Roll dice', emoji='🎲', style=discord.ButtonStyle.green, disabled=True)
+        btn3 = Button(label='Give up', emoji='🏳', style=discord.ButtonStyle.red, disabled=False)
+        btn4 = Button(label='Reset idle timer', emoji='🕓', style=discord.ButtonStyle.blurple, disabled=False)
+        btn4.callback = self.extendIdleTimeout
+        btn3.callback = self.giveUp
+        btns = View()
+        for i in self.melds:
+            temp = BountyMeldButton(game=self, meld=i, priority=i[2] != 0)
+            btns.add_item(temp)
+        btns.add_item(btn1)
+        btns.add_item(btn3)
+        btns.add_item(btn4)
+        self.latestEmbed = embeds.getAfterRollEmbed(iconList=[dice[i] for i in self.tableDice],
+                                                    iconList2=[dice[i] for i in self.invDice], mlt=self.multiplier,
+                                                    lead=self.turn == self.lead, pNum=self.turn, time=int(time.time())+60)
+        self.turnHistory += [('Rolled dice:', ' '.join([dice[i] for i in self.tableDice]))]
+        await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
+        self.task = asyncio.create_task(self.cancelIdleUser())
+
+    async def botRollDice(self):  # bot action ========================================================
+        if self.turn == 0 or self.state == 2:
+            return
+        self.tableDice = [random.randint(0, 5) for _ in '.' * len(self.tableDice)]
+        if not random.randint(0, 5) and len(self.tableDice) >= 2:
+            self.tableDice[-2:] = [self.bounties[2][0]]*2
+        self.getMelds()
+        if len(self.tableDice) <= 2 and len(self.melds) <= 1:
+            if self.turn == 0:
+                return
+            await self.farkleActions()
+            return
+        if self.turn == 0:
+            return
+        btn3 = Button(label='Give up', emoji='🏳', style=discord.ButtonStyle.red, disabled=False)
+        btn3.callback = self.giveUp
+        btns = View()
+        btns.add_item(btn3)
+        self.latestEmbed = embeds.getAfterRollEmbed(iconList=[dice[i] for i in self.tableDice],
+                                                    iconList2=[dice[i] for i in self.invDice], mlt=self.multiplier,
+                                                    lead=1 == self.lead, pNum=1, time=int(time.time())+60)
+        self.turnHistory += [('Rolled dice:', ' '.join([dice[i] for i in self.tableDice]))]
+        await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
+        await asyncio.sleep(1.5)
+        await self.botMeldItem(self.melds[0])
+
+    async def botMeldItem(self, meld):
+        if self.turn == 0 or self.state == 2:
+            return
+        self.bank[1] += meld[2]
+        match meld[2]:
+            case 3000:
+                print('3K')
+                rn = random.randint(0, 5)
+                self.bounties[0] = (rn, 4, 3000, dice[rn])
+            case 1500:
+                print('1,5K')
+                rn = random.randint(0, 5)
+                self.bounties[1] = (rn, 3, 1500, dice[rn])
+            case 500:
+                print('0,5K')
+                rn = random.randint(0, 5)
+                self.bounties[2] = (rn, 2, 500, dice[rn])
+        for _ in range(meld[1]):
+            self.tableDice.remove(meld[0])
+            self.invDice += [meld[0]]
+        btn3 = Button(label='Give up', emoji='🏳', style=discord.ButtonStyle.red, disabled=False)
+        btn3.callback = self.giveUp
+        btns = View()
+        self.getMelds()
+        btns.add_item(btn3)
+        self.latestEmbed = embeds.getAfterMeldEmbed(iconList=[emojis.dice[i] for i in self.tableDice], iconList2=[emojis.dice[i] for i in self.invDice],
+                                                         meld=meld, mlt=self.multiplier, lead=False, pNum=self.turn,
+                                                         time=int(time.time()) + 60) if meld[2] == 0 else embeds.getAfterBountyMeldEmbed(iconList=[emojis.dice[i] for i in self.tableDice],
+                                                         iconList2=[emojis.dice[i] for i in self.invDice], meld=meld, pNum=self.turn, time=int(time.time()) + 60)
+        self.turnHistory += [('Melded dice:', f'{meld[3]} × {meld[1]} *- {meld[2]}*')]
+        await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=btns)
+        await asyncio.sleep(1.5)
+        if self.turn == 0:
+            return
+        await self.botRollDice()
+
+    async def farkleActions(self):
+        self.latestEmbed = embeds.getFarkledEmbed(turnBank=self.bank[2], pNum=self.turn,
+                                                  iconList=[dice[i] for i in self.tableDice])
+        self.turnHistory += [('Rolled & farkled:', ' '.join([dice[i] for i in self.tableDice]))]
+        await self.latestMsg.edit(embeds=self.getTurnRecap() + [self.latestEmbed], view=None)
+        self.highStakesPass = None
+        self.embedList += self.getTurnRecap()
+        await asyncio.sleep(2)
+        await self.latestMsg.edit(embeds=self.getTurnRecap(), view=None)
+        if self.bank[self.turn] >= self.goal:
+            self.embedList += [
+                embeds.getNormalWinEmbed(winner=self.players[self.turn], pNum=self.turn, turns=self.turnsQty, time=int(time.time())+30)]
+            await self.channel.send(embed=self.embedList[-1])
+            await self.terminateGame(30)
+            return
+        self.turn = int(not self.turn)
+        await self.startTurn()
+
+    def getMelds(self):
+        self.melds = []  # die id, amount, pts, emoji
+        successMelds = []
+        for i in range(6):
+            if self.tableDice.count(i) >= 4:
+                if self.bounties[0][0] == i:
+                    successMelds += [(i, 4, 3000, dice[i])]
+            if self.tableDice.count(i) >= 3:
+                if self.bounties[1][0] == i:
+                    successMelds += [(i, 3, 1500, dice[i])]
+            if self.tableDice.count(i) >= 2:
+                if self.bounties[2][0] == i:
+                    successMelds += [(i, 2, 500, dice[i])]
+        if self.tableDice != []:
+            self.melds += [(self.tableDice[-1], 1, 0, dice[self.tableDice[-1]])]
+        self.melds = successMelds + self.melds
+        return (False, 0)

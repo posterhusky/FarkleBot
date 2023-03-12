@@ -4,14 +4,27 @@ from discord.ui import View, Button
 print('starting bot...')
 
 bot = discord.Bot(intents=discord.Intents().all())
-farkleCentral, regularRole, adminRole, gamesCategory, replaysCategory, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel, *_ = [
-                                                                                                                                                                                                                                     None] * 50
+farkleCentral, regularRole, adminRole, gamesCategory, replaysCategory, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel, eChannel, eMsg, *_ = [None] * 50
 
 totalGames = 0
 currentGames = []
 queue = []
+eventQueue = []
+eventBuffer = []
+liveEvent = 0
+
+async def createAiEventGame(interaction: discord.Interaction):
+    for i in currentGames:
+        if interaction.user in i.players and i.state != 2:
+            await interaction.response.send_message(embed=embeds.getSelfIngameEmbed(), ephemeral=True)
+            return
+    await interaction.response.send_message(embed=embeds.getAiGameStartingEmbed(), ephemeral=True)
+    await createAiGame(player=interaction.user, startMultiplier=1, multiplierQuantity=5,
+                       multiplierQuality=0.2, leadAmount=1500, goal=10000, event=liveEvent)
 
 dice = [emojis.die1, emojis.die2, emojis.die3, emojis.die4, emojis.die5, emojis.die6]
+
+currentDay = int(time.time()) // 86400
 
 
 class QueuedPerson():
@@ -25,6 +38,13 @@ class QueuedPerson():
         except:
             return
         print('user got kicked from queue:', self.user.name)
+        await qMessage.remove_reaction(emoji='🇶', member=self.user)
+        await self.user.send(embed=embeds.getQueueKickEmbed(), silent=True)
+        while self in queue:
+            queue.remove(self)
+
+    async def instantKickQueuedMember(self):
+        print('user got removed from queue:', self.user.name)
         await qMessage.remove_reaction(emoji='🇶', member=self.user)
         await self.user.send(embed=embeds.getQueueKickEmbed(), silent=True)
         while self in queue:
@@ -45,7 +65,7 @@ class QueuedPerson():
 
 @bot.event
 async def on_ready():
-    global farkleCentral, regularRole, adminRole, gamesCategory, replaysCategory, totalGames, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel
+    global farkleCentral, regularRole, adminRole, gamesCategory, replaysCategory, totalGames, qDisplayChannel, qChannel, qMessage, prefChannel, pref1Msg, pref2Msg, pref3Msg, annPingRole, qPingRole, savesChannel, totalGamesMsg, replaysChannel, eChannel, eMsg, liveEvent, eventBuffer, currentDay
     print(f'Logged on as {bot.user}!')
     farkleCentral = discord.utils.get(bot.guilds, id=idList.farkleCentralId)
     regularRole = discord.Guild.get_role(farkleCentral, idList.regularRole)
@@ -56,6 +76,7 @@ async def on_ready():
     replaysCategory = discord.utils.get(farkleCentral.categories, id=idList.replaysCategory)
     qDisplayChannel = discord.utils.get(farkleCentral.channels, id=idList.qDisplayChannel)
     qChannel = discord.utils.get(farkleCentral.channels, id=idList.qChannel)
+    eChannel = discord.utils.get(farkleCentral.channels, id=idList.eChannel)
     prefChannel = discord.utils.get(farkleCentral.channels, id=idList.prefChannel)
     savesChannel = discord.utils.get(farkleCentral.channels, id=idList.savesChannel)
     await qDisplayChannel.edit(name=f'Queued members: {len(queue)}')
@@ -63,6 +84,7 @@ async def on_ready():
     pref1Msg = await prefChannel.fetch_message(idList.pref1Msg)
     pref2Msg = await prefChannel.fetch_message(idList.pref2Msg)
     pref3Msg = await prefChannel.fetch_message(idList.pref3Msg)
+    eMsg = await eChannel.fetch_message(idList.eMsg)
     totalGamesMsg = await savesChannel.fetch_message(idList.totalGamesMsg)
     replaysChannel = discord.utils.get(farkleCentral.channels, id=idList.replayChannel)
     print(totalGamesMsg.content)
@@ -71,10 +93,29 @@ async def on_ready():
                        botArg=bot, currentGamesArg=currentGames,
                        regularRoleArg=regularRole, replaysCategoryArg= replaysCategory)
     await replayFunctions.readReplayData(replaysChannel=replaysChannel, farkleCentral=farkleCentral)
+    liveEvent = random.randint(0, 5)
+    eventBuffer = [liveEvent]
+    aiEventGameBtn = Button(label='Play against AI', emoji='🤖', style=discord.ButtonStyle.blurple)
+    aiEventGameBtn.callback = createAiEventGame
+    aiEventGameView = View()
+    aiEventGameView.add_item(aiEventGameBtn)
+    await eMsg.edit(embeds=embeds.getEventChannelEmbeds(liveEvent, (currentDay + 1) * 86400), view=aiEventGameView)
+    print('changing event to', liveEvent, 'with buffer containing', eventBuffer)
+    while 1:
+        await asyncio.sleep(600)
+        print(f'checking day: {currentDay}days vs {int(time.time()) // 86400}now')
+        if currentDay != int(time.time()) // 86400:
+            currentDay = int(time.time()) // 86400
+            while liveEvent in eventBuffer:
+                liveEvent = random.randint(0, 5)
+            eventBuffer = [eventBuffer[-1], liveEvent]
+            print('changing event to', liveEvent, 'with buffer containing', eventBuffer)
+            await eMsg.edit(embeds=embeds.getEventChannelEmbeds(liveEvent, (currentDay + 1) * 86400), view=aiEventGameView)
 
 
 @bot.event
 async def on_message(message: discord.Message):
+    global liveEvent, eventBuffer
     if message.author == bot.user:
         return
     if isinstance(message.author, discord.User):
@@ -89,6 +130,24 @@ async def on_message(message: discord.Message):
         elif message.content == '$newgameinfo':
             i = await message.channel.send(embeds=embeds.getNewGameEmbeds(bot.user))
             await i.add_reaction('🇶')
+        elif message.content == '$eventdisplay':
+            i = await message.channel.send(embeds=embeds.getEventChannelEmbeds(0, (currentDay + 1)*86400))
+            print(message.id)
+            await i.add_reaction('🇶')
+        elif message.content == '$eventrefresh':
+            while liveEvent in eventBuffer:
+                liveEvent = random.randint(0, 5)
+            eventBuffer = [eventBuffer[-1], liveEvent]
+            print('changing event to', liveEvent, 'with buffer containing', eventBuffer, 'as requested by', message.author.name)
+            aiEventGameBtn = Button(label='Play against AI', emoji='🤖', style=discord.ButtonStyle.blurple)
+            aiEventGameBtn.callback = createAiEventGame
+            aiEventGameView = View()
+            aiEventGameView.add_item(aiEventGameBtn)
+            await eMsg.edit(embeds=embeds.getEventChannelEmbeds(liveEvent, (currentDay + 1) * 86400), view=aiEventGameView)
+        elif message.content[:-1] == '$react':
+            if message.reference != None:
+                i = await message.channel.fetch_message(message.reference.message_id)
+                await i.add_reaction(message.content[-1])
         elif message.content == '$pref1':
             i = await message.channel.send(embed=embeds.getBlockInvitesEmbed())
             await i.add_reaction('✅')
@@ -126,7 +185,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    global queue, pref2Msg
+    global queue, pref2Msg, eventQueue
     farkleCentral = bot.guilds[0]
     channel = discord.utils.get(farkleCentral.channels, id=payload.channel_id)
     message = await channel.fetch_message(payload.message_id)
@@ -152,30 +211,53 @@ async def on_raw_reaction_add(payload):
                     await channel.set_permissions(i.players[1], read_messages=True, send_messages=True)
                     await i.startGame()
                 break
-    elif str(payload.emoji) == '🇶' and payload.channel_id == idList.newGameChannel:
-        print('player joined queue:', payload.member.name)
+    elif str(payload.emoji) == '🇶' and payload.channel_id in [idList.newGameChannel, idList.eChannel]:
+        print('player joined normal queue:' if payload.channel_id == idList.newGameChannel else 'player joined event queue:', payload.member.name)
         for i in currentGames:
             if payload.member in i.players:
                 print('but was removed due to being in-game:', payload.member.name, 'in', i.players[0], 'vs',
                       i.players[1])
                 await message.remove_reaction(emoji='🇶', member=payload.member)
                 return
+        for i in queue + eventQueue:
+            if payload.member == i.user:
+                print('but was removed due to being in-queud:', payload.member.name)
+                await message.remove_reaction(emoji='🇶', member=payload.member)
+                return
         await payload.member.send(embed=embeds.getQueueJoinEmbed(), silent=True)
-        queue += [QueuedPerson(user=payload.member)]
-        if len(queue) >= 2:
-            await createUserGame(p1=queue[0].user, p2=queue[1].user,
-                                 embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user, time=int(time.time())+120), leadAmount=1500,
-                                 startMultiplier=1.0, multiplierQuality=0.2, multiplierQuantity=5, goal=10000)
-            await message.remove_reaction(emoji='🇶', member=queue[0].user)
-            await message.remove_reaction(emoji='🇶', member=queue[1].user)
-            print('Queue full, starting game:')
-            for i in queue:
-                i.task.cancel()
-            queue = []
+        if payload.channel_id == idList.newGameChannel:
+            queue += [QueuedPerson(user=payload.member)]
+            if len(queue) >= 2:
+                await createUserGame(p1=queue[0].user, p2=queue[1].user,
+                                     embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user,
+                                                                    time=int(time.time()) + 120), leadAmount=1500,
+                                     startMultiplier=1.0, multiplierQuality=0.2, multiplierQuantity=5, goal=10000)
+                await message.remove_reaction(emoji='🇶', member=queue[0].user)
+                await message.remove_reaction(emoji='🇶', member=queue[1].user)
+                print('Queue full, starting game:')
+                for i in queue:
+                    i.task.cancel()
+                queue = []
+            else:
+                temp = await channel.send(qPingRole.mention)
+                await temp.delete()
         else:
-            temp = await channel.send(qPingRole.mention)
-            await temp.delete()
-        await qDisplayChannel.edit(name=f'Queued members: {len(queue)}')
+            eventQueue += [QueuedPerson(user=payload.member)]
+            if len(eventQueue) >= 2:
+                await createUserGame(p1=eventQueue[0].user, p2=eventQueue[1].user,
+                                     embed=embeds.getQueueGameEmbed(eventQueue[0].user, eventQueue[1].user,
+                                                                    time=int(time.time()) + 120), leadAmount=1500,
+                                     startMultiplier=1.0, multiplierQuality=0.2, multiplierQuantity=5, goal=10000, event=liveEvent)
+                await message.remove_reaction(emoji='🇶', member=eventQueue[0].user)
+                await message.remove_reaction(emoji='🇶', member=eventQueue[1].user)
+                print('Queue full, starting game:')
+                for i in eventQueue:
+                    i.task.cancel()
+                eventQueue = []
+            else:
+                temp = await channel.send(qPingRole.mention)
+                await temp.delete()
+        await qDisplayChannel.edit(name=f'Queued members: {len(queue + eventQueue)}')
 
 
 @bot.event
@@ -191,12 +273,13 @@ async def on_raw_reaction_remove(payload):
         elif payload.message_id == idList.pref3Msg:
             await member.remove_roles(qPingRole)
         return
-    if str(payload.emoji) == '🇶' and payload.channel_id == idList.newGameChannel:
+    if str(payload.emoji) == '🇶' and payload.channel_id in [idList.newGameChannel, idList.eChannel]:
         print('player left the queue:', member.name)
-        for i in queue:
+        for i in queue+eventQueue:
             if i.user == member:
                 i.task.cancel()
-                queue = [j for j in queue if j != i]
+                if i in queue: queue.remove(i)
+                if i in eventQueue: eventQueue.remove(i)
                 break
         else:
             return  # in case a player got kicked (was already removed in QueuedUser.kickQueuedMember())
@@ -228,11 +311,6 @@ async def invite(ctx,
     if ctx.author == user:
         await ctx.respond(embed=embeds.getSelfChallengeErrEmbed(bot.user), ephemeral=True)
         return
-    if user == bot.user:
-        await ctx.respond(embed=embeds.getAiGameStartingEmbed(), ephemeral=True)
-        await createAiGame(player=ctx.author, startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity,
-                           multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
-        return
     for i in currentGames:
         if ctx.author in i.players and i.state != 2:
             await ctx.respond(embed=embeds.getSelfIngameEmbed(), ephemeral=True)
@@ -245,6 +323,11 @@ async def invite(ctx,
         users += [user1]
     if user in users:
         await ctx.respond(embed=embeds.getHasDisabledInvitesEmbed(user), ephemeral=True)
+        return
+    if user == bot.user:
+        await ctx.respond(embed=embeds.getAiGameStartingEmbed(), ephemeral=True)
+        await createAiGame(player=ctx.author, startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity,
+                           multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
         return
     await ctx.respond(embed=embeds.getChallengeCreationEmbed(user), ephemeral=True)
     await createUserGame(ctx.author, user, embeds.getInviteEmbed(ctx.author, user, time=int(time.time())+120), startMultiplier=multiplier_start,
@@ -270,13 +353,18 @@ async def share(ctx, user: discord.Option(discord.User, 'The user you want to st
 
 
 async def createAiGame(player, startMultiplier: float, multiplierQuantity: int, multiplierQuality: float,
-                       leadAmount: int, goal: int):
+                       leadAmount: int, goal: int, event: int = 6):
     global totalGames, currentGames
+    for i in queue + eventQueue:
+        if i.user == player:
+            await i.instantKickQueuedMember()
     channel = await farkleCentral.create_text_channel(name=f'game-{totalGames}', category=gamesCategory)
     await channel.set_permissions(farkleCentral.default_role, read_messages=False, send_messages=False)
     await channel.set_permissions(regularRole, read_messages=False, send_messages=False)
     await channel.set_permissions(player, read_messages=True, send_messages=False)
-    temp = gameFunctions.NormalGame(id=totalGames, state=1, players=(player, bot.user), channel=channel, startMultiplier=startMultiplier,
+    gameTypes = [gameFunctions.ScoreAttackGame, gameFunctions.SnowballGame, gameFunctions.HotPotatoGame,
+                 gameFunctions.TugOfWarGame, gameFunctions.MysteryDieGame, gameFunctions.BountyGame, gameFunctions.NormalGame]
+    temp = gameTypes[event](id=totalGames, state=1, players=(player, bot.user), channel=channel, startMultiplier=startMultiplier,
                       multiplierQuantity=multiplierQuantity, multiplierQuality=multiplierQuality, leadAmount=leadAmount,
                       goal=goal)
     currentGames += [temp]
@@ -286,8 +374,11 @@ async def createAiGame(player, startMultiplier: float, multiplierQuantity: int, 
 
 
 async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embed, startMultiplier: float,
-                         multiplierQuantity: int, multiplierQuality: float, leadAmount: int, goal: int):
+                         multiplierQuantity: int, multiplierQuality: float, leadAmount: int, goal: int, event: int = 6):
     global totalGames, currentGames
+    for i in queue + eventQueue:
+        if i.user in [p1, p2]:
+            await i.instantKickQueuedMember()
     channel = await farkleCentral.create_text_channel(name=f'game-{totalGames}',
                                                       category=gamesCategory)
     await channel.set_permissions(farkleCentral.default_role, read_messages=False, send_messages=False)
@@ -298,7 +389,9 @@ async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embe
     temp = await channel.send(f'{p1.mention}{p2.mention}')
     await temp.delete()
     await msg.add_reaction('✅')
-    temp = gameFunctions.NormalGame(id=totalGames, state=0, players=(p1, p2), channel=channel,
+    gameTypes = [gameFunctions.ScoreAttackGame, gameFunctions.SnowballGame, gameFunctions.HotPotatoGame,
+                 gameFunctions.TugOfWarGame, gameFunctions.MysteryDieGame, gameFunctions.BountyGame, gameFunctions.NormalGame]
+    temp = gameTypes[event](id=totalGames, state=0, players=(p1, p2), channel=channel,
                       startMultiplier=startMultiplier, multiplierQuantity=multiplierQuantity,
                       multiplierQuality=multiplierQuality, leadAmount=leadAmount, goal=goal)
     currentGames += [temp]
