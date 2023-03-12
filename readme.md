@@ -1,10 +1,5 @@
 #
 <div align="center">
-    <script>
-    function myFunction() {
-      navigator.clipboard.writeText('hi');
-    }
-    </script>
     <a href="https://www.python.org/">
         <img 
             src="https://img.shields.io/badge/WRITTEN%20IN-PYTHON%203.11-4B8BBE?style=for-the-badge&logo=python&logoColor=white"
