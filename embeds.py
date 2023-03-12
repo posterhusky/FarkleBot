@@ -230,6 +230,13 @@ def getNotYourTurnEmbed():
         url=images.getImage(1))
     return embed1
 
+def getMysteryDieNotYourTurnEmbed():
+    embed1 = discord.Embed(title=f'**Opponent only.**', colour=discord.Colour.red(),
+                           description=f'Only your opponent can roll the mystery die.\n\nHowever, you can use the *give up* button at any time.')
+    embed1.set_thumbnail(
+        url=images.getImage(1))
+    return embed1
+
 def getIdleTimeoutExtendedEmbed():
     embed1 = discord.Embed(title=f'**Reset idle timer.**', colour=discord.Colour.blue(),
                            description=f'The idle timer was reset back to 1 minute.')
@@ -270,9 +277,32 @@ def getStartScoreAttackEmbed(turn, p1, p2):
         url=images.getImage(1))
     return embed1
 
-def getStartSnowballEmbed(turn, p1, p2):
+def getStartSnowballEmbed(turn, p1, p2, cap):
     embed1 = discord.Embed(title=f'**SNOWBALL MODE**', colour=discord.Colour.green(),
-                           description=f'The game started in snowball mode. Roll dice, meld items, get points, but there\'s only 1 bank! The first player to get the bank to *10K pts.* wins.\n\nP1: {p1.mention}\nP2: {p2.mention}')
+                           description=f'The game started in snowball mode. Roll dice, meld items, get points, but there\'s only 1 bank! The first player to get the bank to exactly *{cap} pts.* wins.\n\nP1: {p1.mention}\nP2: {p2.mention}')
+    embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(1))
+    return embed1
+
+def getStartHotPotatoEmbed(turn, p1, p2):
+    embed1 = discord.Embed(title=f'**HOT POTATO MODE**', colour=discord.Colour.green(),
+                           description=f'The game started in hot potato mode. Roll dice, select 1 meld and pass the turn to the next person. You loose *1000 pts.* if you farkle. First player with negative bank looses!\n\nP1: {p1.mention}\nP2: {p2.mention}')
+    embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(1))
+    return embed1
+
+def getStartTugOfWarEmbed(turn, p1, p2):
+    embed1 = discord.Embed(title=f'**TUG OF WAR MODE**', colour=discord.Colour.green(),
+                           description=f'The game started in tug of war mode. Roll dice, meld items, get points, but all the points you earn are stolen!\n\nP1: {p1.mention}\nP2: {p2.mention}')
+    embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
+    embed1.set_thumbnail(url=images.getImage(1))
+    return embed1
+
+def getStartMysteryDieEmbed(turn, p1, p2):
+    embed1 = discord.Embed(title=f'**MYSTERY DIE MODE**', colour=discord.Colour.green(),
+                           description=f'The game started in mystery die mode. Roll dice, meld items, get points, but all the start of your turn the opponent has an option to roll the mystery die!\n\nP1: {p1.mention}\nP2: {p2.mention}')
     embed1.add_field(name=f'**P{turn + 1} starts!**', value=f'{p2.mention if turn else p1.mention} was picked randomly to do the first turn!', inline=False)
     embed1.set_thumbnail(
         url=images.getImage(1))
@@ -322,6 +352,45 @@ def getSnowballTurnRecap(destUsr, bank, turnBank, qty, pNum, history):
     turnEmbeds[0].set_thumbnail(url=images.getImage(2))
     return [embed1] + turnEmbeds
 
+def getHotPotatoRecap(destUsr, bank1, bank2, qty, pNum, history):
+    embed1 = discord.Embed(title=f'**{qty}. P{pNum + 1}\'s turn!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
+                           description=f'It\'s {destUsr.mention}\'s turn! Check the message below to see what you can do!')
+    embed1.add_field(name='**P1\'s bank:**', value=bank1, inline=True)
+    embed1.add_field(name='**P2\'s bank:**', value=bank2, inline=True)
+    embed1.set_thumbnail(
+        url=images.getImage(not pNum))
+    turnEmbeds = [discord.Embed(title='**Turn history**', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='All your actions during the turn are displayed here!')]
+    if history == []:
+        turnEmbeds[0].add_field(name='Nothing here yet...', value='', inline=False)
+    else:
+        while (len(history)-1)//24 + 1 != len(turnEmbeds):
+            turnEmbeds += [discord.Embed(title='', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='')]
+        for n, i in enumerate(history):
+            turnEmbeds[n//24].add_field(name=f'{n+1}. {i[0]}', value=i[1], inline=True)
+    turnEmbeds[0].set_thumbnail(url=images.getImage(2))
+    return [embed1] + turnEmbeds
+
+def getMysteryDieTurnRecap(destUsr, p1Bank, p2Bank, turnBank, qty, pNum, history, mod, showMod):
+    embed1 = discord.Embed(title=f'**{qty}. P{pNum + 1}\'s turn!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
+                           description=f'It\'s {destUsr.mention}\'s turn! Check the message below to see what you can do!')
+    if showMod:
+        embed1.add_field(name='**Turn\'s modifier:**', value=mod, inline=False)
+    embed1.add_field(name='**P1\'s bank:**', value=p1Bank, inline=True)
+    embed1.add_field(name='**P2\'s bank:**', value=p2Bank, inline=True)
+    embed1.add_field(name='**Turn score:**', value=turnBank, inline=True)
+    embed1.set_thumbnail(
+        url=images.getImage(not pNum))
+    turnEmbeds = [discord.Embed(title='**Turn history**', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='All your actions during the turn are displayed here!')]
+    if history == []:
+        turnEmbeds[0].add_field(name='Nothing here yet...', value='', inline=False)
+    else:
+        while (len(history)-1)//24 + 1 != len(turnEmbeds):
+            turnEmbeds += [discord.Embed(title='', colour=discord.Colour.blue() if pNum else discord.Colour.red(), description='')]
+        for n, i in enumerate(history):
+            turnEmbeds[n//24].add_field(name=f'{n+1}. {i[0]}', value=i[1], inline=True)
+    turnEmbeds[0].set_thumbnail(url=images.getImage(2))
+    return [embed1] + turnEmbeds
+
 def getNormalStartTurnEmbed(mlt, lead, stake, pNum, time):
     embed1 = discord.Embed(title=f'**It\'s dice rolling time!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
                            description=f'Your turn just started! You can roll the dice or... roll the dice!')
@@ -342,7 +411,7 @@ def getNormalStartTurnEmbed(mlt, lead, stake, pNum, time):
         url=images.getImage(2))
     return embed1
 
-def getScoreAttackStartTurnEmbed(mlt, lead, stake, pNum, first, time):
+def getScoreAttackStartTurnEmbed(stake, pNum, first, time):
     if first:
         embed1 = discord.Embed(title=f'**It\'s dice rolling time!**',
                                colour=discord.Colour.blue() if pNum else discord.Colour.red(),
@@ -355,13 +424,18 @@ def getScoreAttackStartTurnEmbed(mlt, lead, stake, pNum, first, time):
             name=f'You can do a high stake for *{stake[0]} pts.*',
             value='',
             inline=False)
-    if mlt != 1:
-        if lead:
-            embed1.add_field(name=f'Current multiplier: {mlt}x, however it does not apply to your current score because of your point lead.', value='',
-                             inline=False)
-        else:
-            embed1.add_field(name=f'Current multiplier: {mlt}x.', value='',
-                             inline=False)
+    embed1.add_field(name=f'The game will be terminated if you won\'t react <t:{time}:R>!', value='', inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getHotPotatoStartTurnEmbed(pNum, time, iconList):
+    embed1 = discord.Embed(title=f'**It\'s dice rolling time!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
+                           description=f'Your turn just started! You can roll the dice or pass the turn to the next person for 250 pts.!')
+    embed1.add_field(
+        name=f'**Remaining dice:**',
+        value=' '.join(iconList),
+        inline=False)
     embed1.add_field(name=f'The game will be terminated if you won\'t react <t:{time}:R>!', value='', inline=False)
     embed1.set_thumbnail(
         url=images.getImage(2))
@@ -384,6 +458,28 @@ def getHighStakesEmbed(mlt, iconList, iconList2, lead, pts, pNum, time):
         url=images.getImage(2))
     return embed1
 
+def getMysteryDieChoiceEmbed(pNum, time, user):
+    embed1 = discord.Embed(title=f'**P{int(not pNum)+1} can roll the mystery die!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
+                           description=f'{user.mention}, would you like to roll the ***mystery die***? Rolling the die will apply a random modifier on the turn! I can either positive or negative, it\'s up to you whether to take the risk!')
+    embed1.add_field(name=f'The game will be terminated if you won\'t react <t:{time}:R>!', value='', inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getMysteryDieRolledEmbed(mod):
+    embed1 = discord.Embed(title=f'**You rolled the die!**', colour=discord.Colour.green(),
+                           description=f'You decided to roll the mystery die! Here\'s the result:\n\n{mod}\n\nYour decision and the result isn\'t shown to your opponent until the end of the turn.')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getMysteryDieSkippedEmbed():
+    embed1 = discord.Embed(title=f'**You skipped the roll!**', colour=discord.Colour.green(),
+                           description=f'You decided to not roll the mystery die!\n\nYour decision isn\'t shown to your opponent until the end of the turn.')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
 def getHotDiceEmbed(pts, iconList, mlt, lead, pNum, time):
     embed1 = discord.Embed(title=f'**Hot dice!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'{" ".join(iconList)} *- {pts} pts.*\nAll the dice were automatically melded! You can now re-roll all 6 dice again.')
     if mlt != 1:
@@ -399,26 +495,37 @@ def getHotDiceEmbed(pts, iconList, mlt, lead, pNum, time):
     return embed1
 
 def getFarkledEmbed(turnBank, iconList, pNum):
-    embed1 = discord.Embed(title=f'**You got farkled!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'{" ".join(iconList)}\nMelds can\'t be formed from the remaining dice! The score you earned this turn will be lost.\n\nPoints lost *- {turnBank} pts.*')
+    embed1 = discord.Embed(title=f'**You farkled!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'{" ".join(iconList)}\nMelds can\'t be formed from the remaining dice! The score you earned this turn will be lost.\n\nPoints lost *- {turnBank} pts.*')
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
 
+def getTurnPassEmbed(pts, pNum):
+    embed1 = discord.Embed(title=f'**Turn passed!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You chose not to do a risky play and passed the turn to P{int(not pNum)}, however you lost *{pts} pts.*')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
 
 def getFailedHighStakeEmbed(iconList, pts, pNum):
-    embed1 = discord.Embed(title=f'**High stake failed!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You got farkled... and lost the high stake.\n\n{" ".join(iconList)}\nMelds can\'t be formed from the remaining dice! The score you earned this turn will be lost.\n\n*{pts} pts.* were removed from your bank!')
+    embed1 = discord.Embed(title=f'**High stake failed!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You farkled... and lost the high stake.\n\n{" ".join(iconList)}\nMelds can\'t be formed from the remaining dice! The score you earned this turn will be lost.\n\n*{pts} pts.* were removed from your bank!')
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
 
 def getScoreBankedEmbed(turnBank, pNum):
-    embed1 = discord.Embed(title=f'**Score banked!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You finished your turn and banked the score you earned during it.\n\nPoints banked *- {turnBank}*')
+    embed1 = discord.Embed(title=f'**Score banked!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You finished your turn and banked the score you earned during it.\n\nPoints banked - *{turnBank}*')
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
 
-def getScoreCapExceededEmbed(pts, pNum):
-    embed1 = discord.Embed(title=f'**Score cap exceeded!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'Your score went over the limits by *{pts} pts.* It was reset to 5000.')
+def getMysteryDierScoreBankedEmbed(turnBank, pNum,mod):
+    embed1 = discord.Embed(title=f'**Score banked!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You finished your turn and banked the score you earned during it.\n\nPoints banked - *{turnBank}*\nTurn modifier - {mod}')
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
+def getScoreCapExceededEmbed(pts, pNum, cap):
+    embed1 = discord.Embed(title=f'**Score cap exceeded!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'Your score went over the limits by *{pts} pts.* It was reset to {cap}.')
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
@@ -439,6 +546,17 @@ def getAfterRollEmbed(iconList, iconList2, mlt, lead, pNum, time):
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
+
+def getHotPotatoAfterRollEmbed(iconList, iconList2, pNum, time):
+    embed1 = discord.Embed(title=f'**You rolled the dice!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You rolled the dice, you can only pick 1 meld per turn, so pick carefully.')
+    embed1.add_field(name=f'Remaining dice:', value=' '.join(iconList), inline=True)
+    embed1.add_field(name=f'Inventory:', value=' '.join(iconList2), inline=True)
+    embed1.add_field(name=f'The game will be terminated if you won\'t react <t:{time}:R>!', value='',
+                     inline=False)
+    embed1.set_thumbnail(
+        url=images.getImage(2))
+    return embed1
+
 def getAfterMeldEmbed(iconList, iconList2, meld, mlt, lead, pNum, time):
     embed1 = discord.Embed(title=f'**Meld successful!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),description=f'You melded **{meld[3]} × {meld[1]}** and got *{meld[2]} pts.* You can now select another meld, roll the dice or bank your score!')
     embed1.add_field(name=f'Remaining dice:', value=' '.join(iconList), inline=True)
@@ -450,8 +568,9 @@ def getAfterMeldEmbed(iconList, iconList2, meld, mlt, lead, pNum, time):
         else:
             embed1.add_field(name=f'Current multiplier: {mlt}x.', value='',
                              inline=False)
-    embed1.add_field(name=f'The game will be terminated if you won\'t react <t:{time}:R>!', value='',
-                     inline=False)
+    if time != None:
+        embed1.add_field(name=f'The game will be terminated if you won\'t react <t:{time}:R>!', value='',
+                         inline=False)
     embed1.set_thumbnail(
         url=images.getImage(2))
     return embed1
@@ -463,9 +582,9 @@ def getNormalWinEmbed(winner, turns, pNum, time):
         url=images.getImage(0))
     return embed1
 
-def getScoreAttackWinEmbed(winner, looser, turns, pNum, time):
+def getNegBankWinEmbed(winner, looser, turns, pNum, time):
     embed1 = discord.Embed(title=f'**P{pNum+1} WON THE GAME!**', colour=discord.Colour.blue() if pNum else discord.Colour.red(),
-                           description=f'{looser} finished his turn with a negative bank therefore {winner.mention} won in {turns} turns !\n\nThis game will be deleted <t:{time}:R>, you can save the replay if you need it.')
+                           description=f'{looser.mention} finished the turn with a negative bank therefore {winner.mention} won in {turns} turns !\n\nThis game will be deleted <t:{time}:R>, you can save the replay if you need it.')
     embed1.set_thumbnail(
         url=images.getImage(0))
     return embed1
@@ -528,8 +647,9 @@ def getNotInReplayChannelEmbed():
     embed1.set_thumbnail(url=images.getImage(1))
     return embed1
 
-def getHurryUpEmbed(user):
+def getHurryUpEmbed(user, time):
     embed1 = discord.Embed(title=f'**Hurry up!**', colour=discord.Colour.red(),
-                           description=f'It\'s {user.mention}\'s turn!\n\nThe game will terminate in 15. If you need more time to think, press the "Reset idle timer" button (active for both players).')
+                           description=f'It\'s {user.mention}\'s turn!\n\nThe game will terminate <t:{time}:R>. If you need more time to think, press the "Reset idle timer" button (active for both players).')
     embed1.set_thumbnail(url=images.getImage(1))
     return embed1
+

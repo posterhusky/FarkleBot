@@ -164,7 +164,7 @@ async def on_raw_reaction_add(payload):
         queue += [QueuedPerson(user=payload.member)]
         if len(queue) >= 2:
             await createUserGame(p1=queue[0].user, p2=queue[1].user,
-                                 embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user, time=int(time.time())+45), leadAmount=1500,
+                                 embed=embeds.getQueueGameEmbed(queue[0].user, queue[1].user, time=int(time.time())+120), leadAmount=1500,
                                  startMultiplier=1.0, multiplierQuality=0.2, multiplierQuantity=5, goal=10000)
             await message.remove_reaction(emoji='🇶', member=queue[0].user)
             await message.remove_reaction(emoji='🇶', member=queue[1].user)
@@ -247,7 +247,7 @@ async def invite(ctx,
         await ctx.respond(embed=embeds.getHasDisabledInvitesEmbed(user), ephemeral=True)
         return
     await ctx.respond(embed=embeds.getChallengeCreationEmbed(user), ephemeral=True)
-    await createUserGame(ctx.author, user, embeds.getInviteEmbed(ctx.author, user, time=int(time.time())+45), startMultiplier=multiplier_start,
+    await createUserGame(ctx.author, user, embeds.getInviteEmbed(ctx.author, user, time=int(time.time())+120), startMultiplier=multiplier_start,
                          multiplierQuantity=multiplier_quantity, multiplierQuality=multiplier_quality,
                          leadAmount=lead_amount, goal=goal)
 
@@ -295,6 +295,8 @@ async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embe
     await channel.set_permissions(p1, read_messages=True, send_messages=False)
     await channel.set_permissions(p2, read_messages=True, send_messages=False)
     msg = await channel.send(embed=embed)
+    temp = await channel.send(f'{p1.mention}{p2.mention}')
+    await temp.delete()
     await msg.add_reaction('✅')
     temp = gameFunctions.NormalGame(id=totalGames, state=0, players=(p1, p2), channel=channel,
                       startMultiplier=startMultiplier, multiplierQuantity=multiplierQuantity,
@@ -307,7 +309,7 @@ async def createUserGame(p1: discord.User, p2: discord.User, embed: discord.Embe
 
 async def cancelUnreadyGame(temp, msg, channel, p1, p2):
     try:
-        await asyncio.sleep(45)
+        await asyncio.sleep(120)
     except asyncio.CancelledError:
         return
     await msg.clear_reactions()

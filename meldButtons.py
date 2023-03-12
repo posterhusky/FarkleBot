@@ -43,3 +43,32 @@ class MeldButton(Button):
         self.game.turnHistory += [('Melded dice:', f'{self.meld[3]} × {self.meld[1]} *- {self.meld[2]}*')]
         await self.game.latestMsg.edit(embeds=self.game.getTurnRecap() + [self.game.latestEmbed], view=btns)
         self.game.task = asyncio.create_task(self.game.cancelIdleUser())
+
+class HotPotatoMeldButton(MeldButton):
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user != self.game.players[self.game.turn]:
+            await interaction.response.send_message(embed=embeds.getNotYourTurnEmbed(), ephemeral=True)
+            return
+        self.game.task.cancel()
+        await interaction.response.defer()
+        self.game.bank[self.game.turn] += self.meld[2]
+        for _ in range(self.meld[1]):
+            self.game.tableDice.remove(self.meld[0])
+            self.game.invDice += [self.meld[0]]
+        self.game.latestEmbed = embeds.getAfterMeldEmbed(iconList=[emojis.dice[i] for i in self.game.tableDice],
+                                                         iconList2=[emojis.dice[i] for i in self.game.invDice], meld=self.meld,
+                                                         mlt=self.game.multiplier,
+                                                         lead=self.game.turn == self.game.lead, pNum=self.game.turn, time=None)
+        self.game.turnHistory += [('Melded dice:', f'{self.meld[3]} × {self.meld[1]} *- {self.meld[2]}*')]
+        await self.game.latestMsg.edit(embeds=self.game.getTurnRecap() + [self.game.latestEmbed], view=None)
+        self.game.embedList += self.game.getTurnRecap()
+        await asyncio.sleep(2)
+        if self.game.bank[self.game.turn] > 5000:
+            self.game.turnHistory += [('Score cap exceeded:', '*' + str(self.game.bank[self.game.turn] - 5000) + ' pts.* over the limit')]
+            self.game.latestEmbed = embeds.getScoreCapExceededEmbed(self.game.bank[self.game.turn] - 5000, pNum=self.game.turn, cap=5000)
+            self.game.bank[self.game.turn] = 5000
+            await self.game.latestMsg.edit(embeds=self.game.getTurnRecap() + [self.game.latestEmbed], view=None)
+            await asyncio.sleep(2)
+        await self.game.latestMsg.edit(embeds=self.game.getTurnRecap(), view=None)
+        self.game.turn = int(not self.game.turn)
+        await self.game.startTurn()
