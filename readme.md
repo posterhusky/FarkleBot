@@ -53,7 +53,7 @@ We should warn you that this version of the bot isn't meant to be used on other 
 
 - [@Vanolex](https://github.com/posterhusky)
 
-- [@Hexabyte](https://github.com/posterhusky)
+- [@Hexabyte](https://github.com/brianag010)
 
 
 We hope you enjoy playing Farkle with our Discord Bot! If you have any questions or feedback, please don't hesitate to reach out to us.
