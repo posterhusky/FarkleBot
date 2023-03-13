@@ -318,16 +318,16 @@ async def invite(ctx,
         if user in i.players and i.state != 2:
             await ctx.respond(embed=embeds.getInvitedIngameEmbed(user), ephemeral=True)
             return
+    if user == bot.user:
+        await ctx.respond(embed=embeds.getAiGameStartingEmbed(), ephemeral=True)
+        await createAiGame(player=ctx.author, startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity,
+                           multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
+        return
     users = []
     async for user1 in pref1Msg.reactions[0].users():
         users += [user1]
     if user in users:
         await ctx.respond(embed=embeds.getHasDisabledInvitesEmbed(user), ephemeral=True)
-        return
-    if user == bot.user:
-        await ctx.respond(embed=embeds.getAiGameStartingEmbed(), ephemeral=True)
-        await createAiGame(player=ctx.author, startMultiplier=multiplier_start, multiplierQuantity=multiplier_quantity,
-                           multiplierQuality=multiplier_quality, leadAmount=lead_amount, goal=goal)
         return
     await ctx.respond(embed=embeds.getChallengeCreationEmbed(user), ephemeral=True)
     await createUserGame(ctx.author, user, embeds.getInviteEmbed(ctx.author, user, time=int(time.time())+120), startMultiplier=multiplier_start,
